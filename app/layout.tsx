@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Oddbound — Private Alpha",
+  title: "LimaBound — Alpha",
   description: "A mobile-first turn-based artillery game starring Chaski and Rana.",
   other: {
     "codex-preview": "development",

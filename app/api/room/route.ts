@@ -4,8 +4,9 @@ type ChatLine={who:string;text:string;emote?:boolean};
 type Crater={x:number;r:number};
 type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;moved:[number,number];specialUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;angle?:number;power?:number;special?:boolean;hit?:boolean;damage?:number;nonce:number};chat:ChatLine[]};
 const clean=(v:unknown,n=80)=>String(v??"").trim().slice(0,n);
-const fresh=():GameState=>({positions:[122,638],hp:[100,100],turn:0,turnNo:1,moved:[0,0],specialUsed:[false,false],wind:Math.round(Math.random()*16-8),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:"Rana",text:"He calculado tus probabilidades. Son decorativas. 🐸"}]});
-const groundAt=(x:number,craters:Crater[]=[])=>{let y=304+10*Math.sin(x/72)+5*Math.sin(x/29);for(const c of craters){const d=Math.abs(x-c.x);if(d<c.r)y+=Math.sqrt(c.r*c.r-d*d)*.42}return y};
+const rivalQuips=["En el Callao primero se apunta. Luego se discute.","No es presión; es ambiente de partido.","La puntería también juega de visitante.","Rosado por fuera. Problemas por dentro."];
+const fresh=():GameState=>({positions:[122,638],hp:[160,160],turn:0,turnNo:1,moved:[0,0],specialUsed:[false,false],wind:Math.round(Math.random()*24-12),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:"El Rosado",text:rivalQuips[Math.floor(Math.random()*rivalQuips.length)]}]});
+const groundAt=(x:number,craters:Crater[]=[])=>{let y=303+18*Math.sin(x/58)+10*Math.sin(x/27)+5*Math.sin(x/13);for(const c of craters){const d=Math.abs(x-c.x);if(d<c.r)y+=Math.sqrt(c.r*c.r-d*d)*.42}return y};
 const db=()=>{if(!env.DB)throw new Error("DB unavailable");return env.DB};
 
 export async function GET(req:Request){
@@ -43,12 +44,12 @@ export async function POST(req:Request){
     if(s.turn!==player||s.winner!==null)return Response.json({error:"Todavía no es tu turno."},{status:409});
     const special=Boolean(p.special);if(special&&s.specialUsed[player])return Response.json({error:"El especial ya fue utilizado. La épica tiene límites."},{status:409});
     s.craters=s.craters??[];const angle=Math.max(18,Math.min(78,Number(p.angle)||45)),power=Math.max(28,Math.min(100,Number(p.power)||60));let x=s.positions[player],y=groundAt(x,s.craters)-47,dx=Math.cos(angle*Math.PI/180)*power*.145*(player===0?1:-1),dy=-Math.sin(angle*Math.PI/180)*power*.145;
-    for(let i=0;i<420&&y<groundAt(x,s.craters)&&x>0&&x<760;i++){x+=dx;y+=dy;dy+=.17;dx+=s.wind*.0009*(player===0?1:-1)}
+    for(let i=0;i<420&&y<groundAt(x,s.craters)&&x>0&&x<760;i++){x+=dx;y+=dy;dy+=.17;dx+=s.wind*.0016}
     const target=1-player,hit=Math.abs(x-s.positions[target])<(special?105:61),damage=hit?(special?44:25):0;if(hit)s.hp[target]=Math.max(0,s.hp[target]-damage);if(special)s.specialUsed[player]=true;
-    if(s.hp[target]===0)s.winner=player;else{s.turn=target as 0|1;s.turnNo++;s.moved[target]=0;s.wind=Math.round(Math.random()*16-8)}
+    if(s.hp[target]===0)s.winner=player;else{s.turn=target as 0|1;s.turnNo++;s.moved[target]=0;s.wind=Math.round(Math.random()*24-12)}
     const impactX=Math.max(8,Math.min(752,x));s.craters=[...s.craters.slice(-13),{x:impactX,r:special?22:14}];s.lastEvent={type:"fire",player,impactX,angle,power,special,hit,damage,nonce:Date.now()};
   }else if(action==="chat"||action==="emote"){
-    const text=clean(p.text,80);if(text)s.chat=[...s.chat.slice(-24),{who:player===0?"Chaski":"Rana",text,emote:action==="emote"}];
+    const text=clean(p.text,80);if(text)s.chat=[...s.chat.slice(-24),{who:player===0?"Chaski":"El Rosado",text,emote:action==="emote"}];
   }else if(action==="rematch"){
     Object.assign(s,fresh());
   }else return Response.json({error:"Unknown action"},{status:400});
