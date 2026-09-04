@@ -20,6 +20,10 @@
 - La barra de potencia ahora es larga, horizontal y ocupa todo el ancho del panel de controles.
 - Se corrigió el redibujado que podía ocultar la explosión de Chaski y se añadió un anillo de choque visible sobre el terreno.
 - Las partidas ahora se disputan al mejor de tres rondas y muestran Victoria o Derrota al concluir la serie.
+- Cada turno dura diez segundos y existe una pausa bloqueada de 1.5 segundos antes de que juegue el rival.
+- Los fondos rotan entre Jirón de la Unión, Miraflores, Gamarra y Costa Verde, con relieve distinto en cada turno.
+- La barra de potencia se movió inmediatamente debajo del mapa y los items quedaron más abajo.
+- La explosión de Chaski ahora incluye un efecto visible independiente del lienzo y el bot espera la transición antes de atacar.
 
 ## v0.1-alpha — 2026-09-03
 

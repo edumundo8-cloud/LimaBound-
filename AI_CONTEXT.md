@@ -9,7 +9,7 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 ## Estado canónico actual
 
 - Nombre: **LimaBound**. No volver a usar Oddbound ni Skybound como nombre visible.
-- Escenario: centro de Lima de noche, inspirado en Jirón de la Unión.
+- El escenario rota en cada turno entre Jirón de la Unión, Miraflores, Gamarra y Costa Verde, siempre de noche.
 - Plaza San Martín ocupa el centro y es una zona por la que no se puede caminar.
 - Los personajes permanecen apoyados en el terreno y siguen suavemente su relieve.
 - Al caminar, las piernas deben mostrar movimiento.
@@ -18,7 +18,7 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 - Cada personaje posee un ataque básico y un ataque especial propio.
 - El proyectil básico se llama **Bala 1**.
 - El ataque anteriormente llamado Huayco se llama **SS**, causa 20% más daño y se recarga cada cuatro turnos propios.
-- Cada turno dura nueve segundos; al agotarse, cambia automáticamente.
+- Cada turno dura diez segundos; al agotarse, cambia automáticamente después de una pausa de 1.5 segundos entre jugadores.
 - Cada jugador puede usar un solo item por ronda: Cura (+40 HP y termina el turno) o Dual Shot (dos disparos). Usar uno bloquea el otro.
 - La potencia empieza en cero, se define manteniendo presionada una barra de carga horizontal y vuelve a cero después de cada disparo. No se puede disparar sin cargarla.
 - Cada partida es una serie al mejor de tres rondas; el primer jugador en ganar dos recibe el resultado final Victoria o Derrota.
@@ -27,6 +27,7 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 - Los personajes parpadean cada cinco segundos.
 - La vida de los personajes se incrementó 60% respecto de la versión inicial.
 - Los cráteres deben ser moderados y permitir que la partida continúe.
+- El perfil del terreno cambia con el escenario en cada turno para mantener partidas dinámicas.
 - El ángulo de disparo debe verse junto al personaje.
 - Los comentarios usan español mayormente neutro, pocas jergas y humor sencillo e inteligente.
 - Existe un barrista achorado y visualmente simple de Sport Boys del Callao.
