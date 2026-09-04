@@ -11,6 +11,11 @@
 - Se añadieron efectos de sonido sintetizados para viento, movimiento y disparos.
 - Cada turno permite elegir Cura (+40 HP) o Dual Shot (dos disparos).
 - SS ahora se recarga después de cuatro turnos propios en lugar de limitarse a un solo uso.
+- El límite del turno aumentó de siete a nueve segundos.
+- La potencia ahora se selecciona manteniendo y soltando una barra de carga.
+- Cura y Dual Shot comparten un único uso por jugador durante toda la partida.
+- Se suavizaron y modernizaron los sonidos del juego.
+- Se ajustaron específicamente la explosión, el cráter y la detección de impacto de Chaski.
 
 ## v0.1-alpha — 2026-09-03
 

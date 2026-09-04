@@ -18,10 +18,11 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 - Cada personaje posee un ataque básico y un ataque especial propio.
 - El proyectil básico se llama **Bala 1**.
 - El ataque anteriormente llamado Huayco se llama **SS**, causa 20% más daño y se recarga cada cuatro turnos propios.
-- Cada turno dura siete segundos; al agotarse, cambia automáticamente.
-- En cada turno se puede elegir Cura (+40 HP y termina el turno) o Dual Shot (dos disparos).
+- Cada turno dura nueve segundos; al agotarse, cambia automáticamente.
+- Cada jugador puede usar un solo item por partida: Cura (+40 HP y termina el turno) o Dual Shot (dos disparos). Usar uno bloquea el otro.
+- La potencia se define manteniendo presionada una barra de carga y soltándola en la intensidad deseada.
 - Los proyectiles de cada personaje usan colores distintos y los impactos emplean detección 2D.
-- El viento, el movimiento y los disparos cuentan con efectos de sonido.
+- El viento, el movimiento y los disparos cuentan con efectos de sonido modernos, amistosos y ligeros.
 - Los personajes parpadean cada cinco segundos.
 - La vida de los personajes se incrementó 60% respecto de la versión inicial.
 - Los cráteres deben ser moderados y permitir que la partida continúe.

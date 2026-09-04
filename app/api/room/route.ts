@@ -2,13 +2,13 @@ import { env } from "cloudflare:workers";
 
 type ChatLine={who:string;text:string;emote?:boolean};
 type Crater={x:number;r:number};
-type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;nonce:number};chat:ChatLine[]};
-const TURN_MS=7_000,PROJECTILE_LOCK_MS=1_400,DUAL_LOCK_MS=2_600;
-const blastRadius=(special:boolean)=>special?50:34;
-const craterRadius=(special:boolean)=>special?17:12;
+type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];itemUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;nonce:number};chat:ChatLine[]};
+const TURN_MS=9_000,PROJECTILE_LOCK_MS=1_400,DUAL_LOCK_MS=2_600;
+const blastRadius=(player:number,special:boolean)=>special?50:player===0?40:34;
+const craterRadius=(player:number,special:boolean)=>special?17:player===0?14:12;
 const clean=(v:unknown,n=80)=>String(v??"").trim().slice(0,n);
 const rivalQuips=["En el Callao primero se apunta. Luego se discute.","No es presión; es ambiente de partido.","La puntería también juega de visitante.","Rosado por fuera. Problemas por dentro."];
-const fresh=():GameState=>({positions:[122,638],hp:[160,160],turn:0,turnNo:1,turnStartedAt:Date.now(),moved:[0,0],turnsTaken:[0,0],specialReadyAt:[0,0],wind:Math.round(Math.random()*28-14),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:"El Rosado",text:rivalQuips[Math.floor(Math.random()*rivalQuips.length)]}]});
+const fresh=():GameState=>({positions:[122,638],hp:[160,160],turn:0,turnNo:1,turnStartedAt:Date.now(),moved:[0,0],turnsTaken:[0,0],specialReadyAt:[0,0],itemUsed:[false,false],wind:Math.round(Math.random()*28-14),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:"El Rosado",text:rivalQuips[Math.floor(Math.random()*rivalQuips.length)]}]});
 const groundAt=(x:number,craters:Crater[]=[])=>{let y=303+18*Math.sin(x/58)+10*Math.sin(x/27)+5*Math.sin(x/13);for(const c of craters){const d=Math.abs(x-c.x);if(d<c.r)y+=Math.sqrt(c.r*c.r-d*d)*.42}return y};
 const db=()=>{if(!env.DB)throw new Error("DB unavailable");return env.DB};
 
@@ -41,7 +41,7 @@ export async function POST(req:Request){
   if(player<0)return Response.json({error:"No perteneces a esta partida."},{status:403});
   const s=JSON.parse(row.state) as GameState;
   s.turnStartedAt=s.turnStartedAt??Date.now();
-  s.turnsTaken=s.turnsTaken??[0,0];s.specialReadyAt=s.specialReadyAt??[0,0];
+  s.turnsTaken=s.turnsTaken??[0,0];s.specialReadyAt=s.specialReadyAt??[0,0];s.itemUsed=s.itemUsed??[false,false];
   if(action==="move"){
     if(s.turn!==player||s.winner!==null)return Response.json({error:"Todavía no es tu turno."},{status:409});
     if(Date.now()<s.turnStartedAt)return Response.json({error:"El siguiente turno aún no empieza."},{status:409});
@@ -52,15 +52,15 @@ export async function POST(req:Request){
     if(s.turn!==player||s.winner!==null)return Response.json({error:"Todavía no es tu turno."},{status:409});
     if(Date.now()<s.turnStartedAt)return Response.json({error:"El siguiente turno aún no empieza."},{status:409});
     if(Date.now()>=s.turnStartedAt+TURN_MS)return Response.json({error:"Tu tiempo terminó."},{status:409});
-    const special=Boolean(p.special),dual=Boolean(p.dual)&&!special;if(special&&s.turnsTaken[player]<s.specialReadyAt[player])return Response.json({error:"SS todavía está recargando."},{status:409});
+    const special=Boolean(p.special),dual=Boolean(p.dual)&&!special;if(special&&s.turnsTaken[player]<s.specialReadyAt[player])return Response.json({error:"SS todavía está recargando."},{status:409});if(dual&&s.itemUsed[player])return Response.json({error:"Ya usaste tu item en esta partida."},{status:409});
     s.craters=s.craters??[];const angle=Math.max(18,Math.min(78,Number(p.angle)||45)),power=Math.max(28,Math.min(100,Number(p.power)||60)),shotWind=s.wind,target=(1-player) as 0|1;
-    const simulate=(shotAngle:number)=>{let x=s.positions[player],y=groundAt(x,s.craters)-47,dx=Math.cos(shotAngle*Math.PI/180)*power*.145*(player===0?1:-1),dy=-Math.sin(shotAngle*Math.PI/180)*power*.145;for(let i=0;i<420&&y<groundAt(x,s.craters)&&x>0&&x<760;i++){x+=dx;y+=dy;dy+=.17;dx+=shotWind*.0019}const impactX=Math.max(8,Math.min(752,x)),impactY=groundAt(impactX,s.craters),targetY=groundAt(s.positions[target],s.craters)-27,hit=Math.hypot(impactX-s.positions[target],impactY-targetY)<=blastRadius(special)+18;return{impactX,hit}};
-    const first=simulate(dual?angle-2.5:angle),second=dual?simulate(angle+2.5):null,damagePerHit=special?(player===0?53:44):25,damage=(first.hit?damagePerHit:0)+(second?.hit?damagePerHit:0),hit=damage>0;s.hp[target]=Math.max(0,s.hp[target]-damage);if(special)s.specialReadyAt[player]=s.turnsTaken[player]+4;s.turnsTaken[player]++;
+    const simulate=(shotAngle:number)=>{let x=s.positions[player],y=groundAt(x,s.craters)-47,dx=Math.cos(shotAngle*Math.PI/180)*power*.145*(player===0?1:-1),dy=-Math.sin(shotAngle*Math.PI/180)*power*.145;for(let i=0;i<420&&y<groundAt(x,s.craters)&&x>0&&x<760;i++){x+=dx;y+=dy;dy+=.17;dx+=shotWind*.0019}const impactX=Math.max(8,Math.min(752,x)),impactY=groundAt(impactX,s.craters),targetY=groundAt(s.positions[target],s.craters)-27,targetRadius=target===0?24:18,hit=Math.hypot(impactX-s.positions[target],impactY-targetY)<=blastRadius(player,special)+targetRadius;return{impactX,hit}};
+    const first=simulate(dual?angle-2.5:angle),second=dual?simulate(angle+2.5):null,damagePerHit=special?(player===0?53:44):25,damage=(first.hit?damagePerHit:0)+(second?.hit?damagePerHit:0),hit=damage>0;s.hp[target]=Math.max(0,s.hp[target]-damage);if(special)s.specialReadyAt[player]=s.turnsTaken[player]+4;if(dual)s.itemUsed[player]=true;s.turnsTaken[player]++;
     let windChanged=false;if(s.hp[target]===0)s.winner=player;else{s.turn=target;s.turnNo++;s.turnStartedAt=Date.now()+(dual?DUAL_LOCK_MS:PROJECTILE_LOCK_MS);s.moved[target]=0;if((s.turnNo-1)%4===0){s.wind=Math.round(Math.random()*28-14);windChanged=true}}
-    const newCraters=[{x:first.impactX,r:craterRadius(special)},...(second?[{x:second.impactX,r:craterRadius(false)}]:[])];s.craters=[...s.craters.slice(-(14-newCraters.length)),...newCraters];s.lastEvent={type:"fire",player,impactX:first.impactX,secondImpactX:second?.impactX,angle,power,wind:shotWind,windChanged,special,dual,hit,damage,nonce:Date.now()};
+    const newCraters=[{x:first.impactX,r:craterRadius(player,special)},...(second?[{x:second.impactX,r:craterRadius(player,false)}]:[])];s.craters=[...s.craters.slice(-(14-newCraters.length)),...newCraters];s.lastEvent={type:"fire",player,impactX:first.impactX,secondImpactX:second?.impactX,angle,power,wind:shotWind,windChanged,special,dual,hit,damage,nonce:Date.now()};
   }else if(action==="item"){
-    if(s.turn!==player||s.winner!==null)return Response.json({error:"Todavía no es tu turno."},{status:409});if(Date.now()<s.turnStartedAt||Date.now()>=s.turnStartedAt+TURN_MS)return Response.json({error:"El item no puede usarse fuera de tu tiempo."},{status:409});if(clean(p.item,12)!=="heal")return Response.json({error:"Item desconocido."},{status:400});
-    s.hp[player]=Math.min(160,s.hp[player]+40);s.turnsTaken[player]++;const target=(1-player) as 0|1;s.turn=target;s.turnNo++;s.turnStartedAt=Date.now();s.moved[target]=0;let windChanged=false;if((s.turnNo-1)%4===0){s.wind=Math.round(Math.random()*28-14);windChanged=true}s.lastEvent={type:"heal",player,windChanged,nonce:Date.now()};
+    if(s.turn!==player||s.winner!==null)return Response.json({error:"Todavía no es tu turno."},{status:409});if(Date.now()<s.turnStartedAt||Date.now()>=s.turnStartedAt+TURN_MS)return Response.json({error:"El item no puede usarse fuera de tu tiempo."},{status:409});if(clean(p.item,12)!=="heal")return Response.json({error:"Item desconocido."},{status:400});if(s.itemUsed[player])return Response.json({error:"Ya usaste tu item en esta partida."},{status:409});
+    s.itemUsed[player]=true;s.hp[player]=Math.min(160,s.hp[player]+40);s.turnsTaken[player]++;const target=(1-player) as 0|1;s.turn=target;s.turnNo++;s.turnStartedAt=Date.now();s.moved[target]=0;let windChanged=false;if((s.turnNo-1)%4===0){s.wind=Math.round(Math.random()*28-14);windChanged=true}s.lastEvent={type:"heal",player,windChanged,nonce:Date.now()};
   }else if(action==="timeout"){
     if(s.winner!==null)return Response.json({state:s,revision:row.revision});
     if(Date.now()<s.turnStartedAt+TURN_MS)return Response.json({error:"El turno todavía tiene tiempo."},{status:409});
