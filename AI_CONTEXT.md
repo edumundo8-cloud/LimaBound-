@@ -14,9 +14,15 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 - Los personajes permanecen apoyados en el terreno y siguen suavemente su relieve.
 - Al caminar, las piernas deben mostrar movimiento.
 - El viento debe ser visible, variar de forma perceptible y afectar la trayectoria.
+- El viento cambia después de cuatro turnos globales: dos jugadas por personaje.
 - Cada personaje posee un ataque básico y un ataque especial propio.
 - El proyectil básico se llama **Bala 1**.
-- El ataque anteriormente llamado Huayco se llama **SS** y causa 20% más daño.
+- El ataque anteriormente llamado Huayco se llama **SS**, causa 20% más daño y se recarga cada cuatro turnos propios.
+- Cada turno dura siete segundos; al agotarse, cambia automáticamente.
+- En cada turno se puede elegir Cura (+40 HP y termina el turno) o Dual Shot (dos disparos).
+- Los proyectiles de cada personaje usan colores distintos y los impactos emplean detección 2D.
+- El viento, el movimiento y los disparos cuentan con efectos de sonido.
+- Los personajes parpadean cada cinco segundos.
 - La vida de los personajes se incrementó 60% respecto de la versión inicial.
 - Los cráteres deben ser moderados y permitir que la partida continúe.
 - El ángulo de disparo debe verse junto al personaje.
