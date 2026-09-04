@@ -13,9 +13,13 @@
 - SS ahora se recarga después de cuatro turnos propios en lugar de limitarse a un solo uso.
 - El límite del turno aumentó de siete a nueve segundos.
 - La potencia ahora se selecciona manteniendo y soltando una barra de carga.
-- Cura y Dual Shot comparten un único uso por jugador durante toda la partida.
+- Cura y Dual Shot comparten un único uso por jugador durante cada ronda.
 - Se suavizaron y modernizaron los sonidos del juego.
 - Se ajustaron específicamente la explosión, el cráter y la detección de impacto de Chaski.
+- La potencia ahora comienza y se reinicia en cero; es obligatorio cargarla antes de disparar.
+- La barra de potencia ahora es larga, horizontal y ocupa todo el ancho del panel de controles.
+- Se corrigió el redibujado que podía ocultar la explosión de Chaski y se añadió un anillo de choque visible sobre el terreno.
+- Las partidas ahora se disputan al mejor de tres rondas y muestran Victoria o Derrota al concluir la serie.
 
 ## v0.1-alpha — 2026-09-03
 
