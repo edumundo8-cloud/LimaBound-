@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Los proyectiles ahora recorren la trayectoria a la mitad de la velocidad visual anterior.
+- En computadoras de escritorio, la barra espaciadora dispara Bala 1 o Dual Shot cuando la potencia está lista.
 - Se añadieron reglas y documentación para colaboración segura entre varias IAs.
 - Se ajustaron las explosiones, los cráteres y la detección 2D de daño sobre los personajes.
 - Chaski y El Rosado ahora disparan proyectiles de colores distintos.
