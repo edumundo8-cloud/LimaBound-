@@ -70,7 +70,8 @@ export async function POST(req:Request){
   }else if(action==="rematch"){
     if(s.winner===null)return Response.json({state:s,revision:row.revision});
     const matchOver=Math.max(...s.matchWins)>=2;
-    Object.assign(s,matchOver?fresh():fresh([...s.matchWins] as [number,number],s.roundNo+1));
+    const nextScene=s.roundNo+1;
+    Object.assign(s,matchOver?fresh([0,0],nextScene):fresh([...s.matchWins] as [number,number],nextScene));
   }else return Response.json({error:"Unknown action"},{status:400});
   const next=row.revision+1;const out=await db().prepare("UPDATE rooms SET state=?, revision=?, updated_at=? WHERE code=? AND revision=?").bind(JSON.stringify(s),next,Date.now(),code,row.revision).run();
   if(!out.meta.changes)return Response.json({error:"sync"},{status:409});

@@ -14,3 +14,22 @@ test("fires the ready basic shot with Space on desktop", () => {
   assert.match(pageSource, /matchMedia\("\(pointer: fine\)"\)/);
   assert.match(pageSource, /act\("fire",\{angle,power,special:false,dual:dualArmed\}\)/);
 });
+
+test("supports desktop arrow controls for aim and movement", () => {
+  assert.match(pageSource, /e\.code==="ArrowUp"\|\|e\.code==="ArrowDown"/);
+  assert.match(pageSource, /setAngle\(current=>Math\.max\(18,Math\.min\(78,current\+/);
+  assert.match(pageSource, /e\.code==="ArrowLeft"\|\|e\.code==="ArrowRight"/);
+  assert.match(pageSource, /act\("move",\{delta:e\.code==="ArrowLeft"\?-34:34\}\)/);
+});
+
+test("charges with Space and fires on release", () => {
+  assert.match(pageSource, /spaceCharge\.current=true;startCharge\(\)/);
+  assert.match(pageSource, /window\.addEventListener\("keyup",keyboardUp\)/);
+  assert.match(pageSource, /const shotPower=chargePower\.current/);
+  assert.match(pageSource, /keyboardPower:shotPower/);
+});
+
+test("keeps advancing the scene counter for a new match", () => {
+  assert.match(pageSource, /roundNo:\(s\.roundNo\?\?1\)\+1/);
+  assert.match(pageSource, /roundDisplay=matchWins\[0\]\+matchWins\[1\]\+1/);
+});
