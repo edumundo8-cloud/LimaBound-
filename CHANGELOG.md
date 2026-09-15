@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Se extrajeron las reglas puras (`lib/game/rules.ts`), el cliente de salas (`lib/game/net.ts`) y el sintetizador de sonido (`lib/game/sfx.ts`) fuera de `app/page.tsx`, sin cambios de comportamiento.
+- Se añadieron 35 pruebas unitarias de reglas, salas y sonido, ejecutables con `npm run test:units`.
+- Se corrigieron los dos errores de lint por `setState` dentro de efectos; las advertencias quedan en las 14 preexistentes.
+
 - Se añadieron reglas y documentación para colaboración segura entre varias IAs.
 - Se ajustaron las explosiones, los cráteres y la detección 2D de daño sobre los personajes.
 - Chaski y El Rosado ahora disparan proyectiles de colores distintos.
