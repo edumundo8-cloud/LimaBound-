@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- El fondo avanza a la siguiente zona de Lima al pasar de ronda y al empezar una partida nueva, y vuelve a la primera al completar la vuelta.
+- Plaza San Miguel entra en la rotación con su propio fondo nocturno y el marcador del óvalo de La Marina.
+- La lista de escenarios vive en `lib/scenes.ts`; la sala 1v1 calcula el relieve con ese mismo índice en lugar de asumir cuatro mapas.
 - Los proyectiles ahora recorren la trayectoria a la mitad de la velocidad visual anterior.
 - En computadoras de escritorio, la barra espaciadora dispara Bala 1 o Dual Shot cuando la potencia está lista.
 - Se añadieron reglas y documentación para colaboración segura entre varias IAs.

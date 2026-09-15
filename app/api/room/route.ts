@@ -1,5 +1,7 @@
 import { env } from "cloudflare:workers";
 
+import {sceneIndexFor} from "@/lib/scenes";
+
 type ChatLine={who:string;text:string;emote?:boolean};
 type Crater={x:number;r:number};
 type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;roundNo:number;matchWins:[number,number];turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];itemUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;terrain?:number;nonce:number};chat:ChatLine[]};
@@ -53,7 +55,7 @@ export async function POST(req:Request){
     if(Date.now()<s.turnStartedAt)return Response.json({error:"El siguiente turno aún no empieza."},{status:409});
     if(Date.now()>=s.turnStartedAt+TURN_MS)return Response.json({error:"Tu tiempo terminó."},{status:409});
     const special=Boolean(p.special),dual=Boolean(p.dual)&&!special,rawPower=Number(p.power);if(p.charged!==true||!Number.isFinite(rawPower)||rawPower<=0)return Response.json({error:"Mantén presionada la barra de potencia antes de disparar."},{status:409});if(special&&s.turnsTaken[player]<s.specialReadyAt[player])return Response.json({error:"SS todavía está recargando."},{status:409});if(dual&&s.itemUsed[player])return Response.json({error:"Ya usaste tu item en esta partida."},{status:409});
-    s.craters=s.craters??[];const angle=Math.max(18,Math.min(78,Number(p.angle)||45)),power=Math.max(1,Math.min(100,rawPower)),shotWind=s.wind,target=(1-player) as 0|1,terrain=((s.roundNo??1)-1)%4;
+    s.craters=s.craters??[];const angle=Math.max(18,Math.min(78,Number(p.angle)||45)),power=Math.max(1,Math.min(100,rawPower)),shotWind=s.wind,target=(1-player) as 0|1,terrain=sceneIndexFor(s.roundNo);
     const simulate=(shotAngle:number)=>{let x=s.positions[player],y=groundAt(x,s.craters,terrain)-47,dx=Math.cos(shotAngle*Math.PI/180)*power*.145*(player===0?1:-1),dy=-Math.sin(shotAngle*Math.PI/180)*power*.145;for(let i=0;i<420&&y<groundAt(x,s.craters,terrain)&&x>0&&x<760;i++){x+=dx;y+=dy;dy+=.17;dx+=shotWind*.0019}const impactX=Math.max(8,Math.min(752,x)),impactY=groundAt(impactX,s.craters,terrain),targetY=groundAt(s.positions[target],s.craters,terrain)-27,targetRadius=target===0?24:18,hit=Math.hypot(impactX-s.positions[target],impactY-targetY)<=blastRadius(player,special)+targetRadius;return{impactX,hit}};
     const first=simulate(dual?angle-2.5:angle),second=dual?simulate(angle+2.5):null,damagePerHit=special?(player===0?53:44):25,damage=(first.hit?damagePerHit:0)+(second?.hit?damagePerHit:0),hit=damage>0;s.hp[target]=Math.max(0,s.hp[target]-damage);if(special)s.specialReadyAt[player]=s.turnsTaken[player]+4;if(dual)s.itemUsed[player]=true;s.turnsTaken[player]++;
     let windChanged=false;if(s.hp[target]===0){s.winner=player;s.matchWins[player]++}else{s.turn=target;s.turnNo++;s.turnStartedAt=Date.now()+(dual?DUAL_LOCK_MS:PROJECTILE_LOCK_MS);s.moved[target]=0;if((s.turnNo-1)%4===0){s.wind=Math.round(Math.random()*28-14);windChanged=true}}

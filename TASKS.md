@@ -15,7 +15,7 @@
 ## Ideas futuras — requieren aprobación
 
 - [ ] Sistema de cosméticos para personajes, vehículos y explosiones.
-- [ ] Más mapas inspirados en distritos de Lima.
+- [x] Más mapas inspirados en distritos de Lima. *(Plaza San Miguel añadido; quedan más zonas por aprobar)*
 - [ ] Sistema de cuentas, progresión o monetización.
 
 ## Plantilla para asignar trabajo a una IA
@@ -34,3 +34,10 @@ Pruebas necesarias:
 - `npm test`: 3 pruebas pasan y 2 pruebas heredadas del starter fallan.
 - `npm run lint`: 2 errores preexistentes y 14 advertencias.
 - Los cambios de documentación para colaboración no modifican el juego ni añaden fallos de compilación.
+
+## Línea base técnica — 2026-09-15
+
+- La compilación de producción termina correctamente.
+- `npm test`: 16 pruebas pasan y siguen fallando solo las 2 heredadas del starter.
+- `npm run lint`: 2 errores preexistentes y 15 advertencias (los mismos de antes de la rotación de mapas).
+- `lib/scenes.ts` concentra la lista de escenarios y `tests/scene-rotation.test.mjs` fija la rotación (8 pruebas).

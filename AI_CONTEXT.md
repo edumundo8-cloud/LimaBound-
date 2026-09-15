@@ -9,7 +9,7 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 ## Estado canónico actual
 
 - Nombre: **LimaBound**. No volver a usar Oddbound ni Skybound como nombre visible.
-- El escenario rota en cada turno entre Jirón de la Unión, Miraflores, Gamarra y Costa Verde, siempre de noche.
+- El escenario rota en cada ronda y también al empezar una partida nueva, entre Jirón de la Unión, Miraflores, Gamarra, Costa Verde y Plaza San Miguel, siempre de noche. La lista vive en `lib/scenes.ts`.
 - Plaza San Martín ocupa el centro y es una zona por la que no se puede caminar.
 - Los personajes permanecen apoyados en el terreno y siguen suavemente su relieve.
 - Al caminar, las piernas deben mostrar movimiento.

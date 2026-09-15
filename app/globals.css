@@ -23,6 +23,9 @@
 .scene-landmark.gamarra .landmark-icon::after{content:"";position:absolute;left:19px;right:19px;bottom:0;height:30px;border:2px solid #92ebff;border-bottom:0;background:linear-gradient(90deg,#16263d 48%,#83dceb 49% 52%,#16263d 53%)}
 @keyframes lighthouse-sweep{from{rotate:-13deg;opacity:.45}to{rotate:16deg;opacity:.85}}
 .scene-landmark.costa .landmark-icon{border-radius:50% 50% 8px 8px;background:linear-gradient(#9de8ff 0 28%,#236aa0 29% 58%,#173451 59%);box-shadow:0 9px 0 #122137,0 0 20px #72dfff66}
+.scene-landmark.sanmiguel .landmark-icon{position:relative;width:118px;height:70px;border:2px solid #9fd0ff;border-radius:6px 6px 0 0;background:repeating-linear-gradient(90deg,#132a44 0 14px,#6fd0ff 15px 18px),linear-gradient(#0f1f34,#0b1626);box-shadow:0 0 22px #6fd0ff66}
+.scene-landmark.sanmiguel .landmark-icon::before{content:"PLAZA";position:absolute;left:10px;right:10px;top:8px;padding:4px 2px;border:2px solid #6fd0ff;border-radius:4px;background:#0d1b2e;color:#d8f4ff;font-size:10px;font-weight:900;letter-spacing:.14em;text-shadow:0 0 6px #47b6ff;box-shadow:0 0 10px #47b6ff55}
+.scene-landmark.sanmiguel .landmark-icon::after{content:"";position:absolute;left:-16px;right:-16px;bottom:-9px;height:26px;border-radius:50%;border:2px solid #ffd67b;background:radial-gradient(circle,#1b2b40 0 40%,#0e1a2a 41%);box-shadow:0 0 14px #ffd67b55}
 .turn-owner{padding:3px 9px;border:1px solid #ffffff38;border-radius:99px;background:#18243dcc;color:#bac8dd;font-size:9px;font-weight:900;letter-spacing:.12em;text-shadow:none}
 .turn-owner.mine{border-color:#8af0b8;background:#174837e8;color:#b9ffd8;box-shadow:0 0 13px #4cdf9566}
 .turn-owner.urgent{border-color:#ffbd77;background:#6b2b22ed;color:#fff2c7;animation:turn-owner-alert .55s ease-in-out infinite alternate}
