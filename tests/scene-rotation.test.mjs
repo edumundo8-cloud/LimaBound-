@@ -27,6 +27,7 @@ after(async () => {
 
 const { SCENES, SCENE_COUNT, sceneIndexFor } = await vite.ssrLoadModule("/lib/scenes.ts");
 const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+const cssSourceForFaro = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 const roomSource = await readFile(new URL("../app/api/room/route.ts", import.meta.url), "utf8");
 
 test("la rotacion incluye las cinco zonas de Lima", () => {
@@ -116,4 +117,12 @@ test("el mapa avanza solo al terminar la ronda, sin pulsar nada", () => {
   assert.match(pageSource, /draw\(undefined,undefined,sceneIndex,viewCraters\)/);
   // los disparos siguen resolviendose con la ronda real del estado
   assert.match(pageSource, /variant=sceneIndexFor\(s\.roundNo\)/);
+});
+
+test("el marcador de Miraflores usa el faro ilustrado, no un dibujo de CSS", () => {
+  assert.match(pageSource, /scene\.kind==="faro"\?<img src="\/game\/faro-miraflores\.png"/);
+  assert.ok(!pageSource.includes('scene.kind==="faro"?"◒"'), "ya no debe quedar el glifo del faro");
+  const css = cssSourceForFaro;
+  assert.ok(!/\.scene-landmark\.faro \.landmark-icon/.test(css), "el dibujo CSS del faro debe estar fuera");
+  assert.match(css, /\.scene-landmark\.faro img\{max-height:168px/);
 });

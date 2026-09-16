@@ -15,13 +15,10 @@
 .scene-landmark strong{padding:3px 8px;border:1px solid #ffffff44;border-radius:99px;background:#101a31cc;font-size:9px;letter-spacing:.1em;white-space:nowrap}
 .scene-landmark small{color:#d7e8ff;font-size:8px;letter-spacing:.08em;opacity:.85}
 .scene-landmark .landmark-icon{display:grid;place-items:center;width:58px;height:58px;border:2px solid #ffe39a99;border-radius:50% 50% 12px 12px;background:radial-gradient(circle at 50% 26%,#ffeaa2 0 8%,#ffb347 9% 17%,#523f6e 18% 48%,#18283f 49%);color:#fff3c5;font-size:31px;line-height:1;box-shadow:0 0 22px #ffb34766,0 10px 0 #17243899}
-.scene-landmark.faro .landmark-icon{position:relative;width:82px;height:96px;border:0;border-radius:0;background:linear-gradient(100deg,transparent 0 35%,#f5f0dc 36% 46%,#d55047 47% 57%,#f5f0dc 58% 68%,transparent 69%);box-shadow:none;font-size:0}
-.scene-landmark.faro .landmark-icon::before{content:"";position:absolute;left:27px;top:8px;width:29px;height:23px;border:3px solid #d8f6ff;border-radius:50% 50% 7px 7px;background:#f3b640;box-shadow:0 0 21px #ffe37a}
-.scene-landmark.faro .landmark-icon::after{content:"";position:absolute;left:-34px;top:13px;width:73px;height:14px;background:linear-gradient(90deg,transparent,#fff5a877);clip-path:polygon(0 45%,100% 0,100% 100%,0 55%);transform-origin:right center;animation:lighthouse-sweep 2.8s ease-in-out infinite alternate}
 .scene-landmark.gamarra .landmark-icon{position:relative;width:112px;height:78px;border:2px solid #ffcd7b;border-radius:6px 6px 0 0;background:repeating-linear-gradient(90deg,#183552 0 13px,#ffd05c 14px 18px),repeating-linear-gradient(#183552 0 12px,#62dbe6 13px 16px);box-shadow:0 0 22px #ff689977;font-size:0}
 .scene-landmark.gamarra .landmark-icon::before{content:"GAMARRA";position:absolute;left:9px;right:9px;top:8px;padding:5px 2px;border:2px solid #ff6f9f;border-radius:4px;background:#27193f;color:#fff59b;font-size:11px;font-weight:900;letter-spacing:.12em;text-shadow:0 0 5px #ff4388;box-shadow:0 0 10px #ff438899}
 .scene-landmark.gamarra .landmark-icon::after{content:"";position:absolute;left:19px;right:19px;bottom:0;height:30px;border:2px solid #92ebff;border-bottom:0;background:linear-gradient(90deg,#16263d 48%,#83dceb 49% 52%,#16263d 53%)}
-@keyframes lighthouse-sweep{from{rotate:-13deg;opacity:.45}to{rotate:16deg;opacity:.85}}
+}
 .scene-landmark.costa .landmark-icon{border-radius:50% 50% 8px 8px;background:linear-gradient(#9de8ff 0 28%,#236aa0 29% 58%,#173451 59%);box-shadow:0 9px 0 #122137,0 0 20px #72dfff66}
 .scene-landmark.sanmiguel .landmark-icon{position:relative;width:118px;height:70px;border:2px solid #9fd0ff;border-radius:6px 6px 0 0;background:repeating-linear-gradient(90deg,#132a44 0 14px,#6fd0ff 15px 18px),linear-gradient(#0f1f34,#0b1626);box-shadow:0 0 22px #6fd0ff66}
 .scene-landmark.sanmiguel .landmark-icon::before{content:"PLAZA";position:absolute;left:10px;right:10px;top:8px;padding:4px 2px;border:2px solid #6fd0ff;border-radius:4px;background:#0d1b2e;color:#d8f4ff;font-size:10px;font-weight:900;letter-spacing:.14em;text-shadow:0 0 6px #47b6ff;box-shadow:0 0 10px #47b6ff55}
@@ -68,3 +65,6 @@
 .hit-cry{position:absolute;left:50%;bottom:100%;z-index:9;transform:translate(-50%,-4px);padding:3px 9px;border:1px solid #ffffff5c;border-radius:99px;background:#2b0f19e8;color:#ffdcdc;font-size:11px;font-weight:900;font-style:normal;letter-spacing:.02em;white-space:nowrap;text-shadow:0 1px 3px #120610;box-shadow:0 5px 14px #12061099;pointer-events:none;animation:hit-cry-pop 1.05s ease-out forwards}
 @keyframes hurt-shake{0%,100%{transform:translateX(-50%) rotate(var(--tilt,0deg))}20%{transform:translateX(-50%) translateX(-6px) rotate(calc(var(--tilt,0deg) - 7deg))}42%{transform:translateX(-50%) translateX(5px) rotate(calc(var(--tilt,0deg) + 6deg))}64%{transform:translateX(-50%) translateX(-3px) rotate(calc(var(--tilt,0deg) - 4deg))}84%{transform:translateX(-50%) translateX(2px) rotate(var(--tilt,0deg))}}
 @keyframes hit-cry-pop{0%{opacity:0;transform:translate(-50%,2px) scale(.72)}16%{opacity:1;transform:translate(-50%,-11px) scale(1.08)}66%{opacity:1;transform:translate(-50%,-17px) scale(1)}100%{opacity:0;transform:translate(-50%,-27px) scale(.95)}}
+
+.scene-landmark.faro{width:min(52%,300px)}
+.scene-landmark.faro img{max-height:168px;filter:drop-shadow(0 0 10px #ffd67b4d)}
