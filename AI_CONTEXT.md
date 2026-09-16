@@ -11,6 +11,10 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 - Nombre: **LimaBound**. No volver a usar Oddbound ni Skybound como nombre visible.
 - El escenario rota en cada ronda y también al empezar una partida nueva, entre Jirón de la Unión, Miraflores, Gamarra, Costa Verde y Plaza San Miguel, siempre de noche. La lista vive en `lib/scenes.ts`.
 - Plaza San Martín ocupa el centro y es una zona por la que no se puede caminar.
+- Plaza San Miguel no tiene objeto central: hay un hueco sin suelo infranqueable entre ambas orillas.
+- Las reglas de impacto (radio de explosion, crater, radio del objetivo y dano del SS) viven en `lib/battle.ts` y las importan cliente y sala.
+- El campo mide 836 unidades y cada turno permite 114,4 de movimiento (+10%); `lib/battle.ts` comparte terreno, movimiento y física entre práctica, salas y animación.
+- Después de seis turnos globales aparece un tornado vertical durante dos turnos (7–8, 13–14, etc.). La semilla guardada por ronda sincroniza su posición aleatoria y giro; cada disparo conserva el tornado que lo afectó.
 - Los personajes permanecen apoyados en el terreno y siguen suavemente su relieve.
 - Al caminar, las piernas deben mostrar movimiento.
 - El viento debe ser visible, variar de forma perceptible y afectar la trayectoria.
@@ -18,6 +22,7 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 - Cada personaje posee un ataque básico y un ataque especial propio.
 - El proyectil básico se llama **Bala 1**.
 - El ataque anteriormente llamado Huayco se llama **SS**, causa 20% más daño y se recarga cada cuatro turnos propios.
+- SS puede seleccionarse antes de cargar; después se dispara con el botón principal o Espacio. Seleccionar SS desarma Dual Shot y viceversa.
 - Cada turno dura diez segundos; al agotarse, cambia automáticamente después de una pausa de 1.5 segundos entre jugadores.
 - Cada jugador puede usar un solo item por ronda: Cura (+40 HP y termina el turno) o Dual Shot (dos disparos). Usar uno bloquea el otro.
 - La potencia empieza en cero, se define manteniendo presionada una barra de carga horizontal y vuelve a cero después de cada disparo. No se puede disparar sin cargarla.
