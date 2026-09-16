@@ -126,3 +126,9 @@ test("el marcador de Miraflores usa el faro ilustrado, no un dibujo de CSS", () 
   assert.ok(!/\.scene-landmark\.faro \.landmark-icon/.test(css), "el dibujo CSS del faro debe estar fuera");
   assert.match(css, /\.scene-landmark\.faro img\{max-height:168px/);
 });
+
+test("el CSS mantiene las llaves equilibradas", () => {
+  const abre = (cssSourceForFaro.match(/\{/g) ?? []).length;
+  const cierra = (cssSourceForFaro.match(/\}/g) ?? []).length;
+  assert.equal(abre, cierra, "una llave suelta rompe la compilacion de estilos");
+});
