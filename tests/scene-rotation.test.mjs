@@ -3,7 +3,8 @@
 // Antes cada archivo llevaba su propia cuenta de mapas: la interfaz usaba
 // `%SCENES.length` y la sala 1v1 usaba `%4`. Con un quinto mapa el relieve
 // simulado dejaba de coincidir con el fondo dibujado. Aqui se fija que el
-// indice sale de un solo lugar y que siempre avanza al pasar de ronda.
+// indice sale de un solo lugar y que cada partida elige un mapa aleatorio sin
+// repetir inmediatamente el escenario anterior.
 
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -25,7 +26,7 @@ after(async () => {
   await vite.close();
 });
 
-const { SCENES, SCENE_COUNT, sceneIndexFor } = await vite.ssrLoadModule("/lib/scenes.ts");
+const { SCENES, SCENE_COUNT, randomSceneIndex, sceneIndexFor } = await vite.ssrLoadModule("/lib/scenes.ts");
 const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 const cssSourceForFaro = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 const roomSource = await readFile(new URL("../app/api/room/route.ts", import.meta.url), "utf8");
@@ -56,24 +57,22 @@ test("cada escenario tiene fondo, marcador y estilo distintos", () => {
   }
 });
 
-test("cada ronda avanza a la siguiente zona y vuelve al empezar la vuelta", () => {
+test("el indice heredado conserva las rondas guardadas anteriormente", () => {
   assert.deepEqual([1, 2, 3, 4, 5, 6, 7].map(sceneIndexFor), [0, 1, 2, 3, 4, 0, 1]);
   assert.equal(sceneIndexFor(10), 4);
   assert.equal(sceneIndexFor(11), 0);
 });
 
-test("el fondo cambia despues de cada juego y ninguno se repite antes de la vuelta", () => {
-  const vistas = [];
-  for (let ronda = 1; ronda <= 20; ronda++) {
-    const i = sceneIndexFor(ronda);
-    assert.ok(i >= 0 && i < SCENE_COUNT, `indice fuera de rango en la ronda ${ronda}`);
-    if (vistas.length) {
-      assert.notEqual(i, vistas[vistas.length - 1], `la ronda ${ronda} repite el fondo anterior`);
+test("la seleccion aleatoria nunca sale del rango ni repite el mapa anterior", () => {
+  for (let anterior = 0; anterior < SCENE_COUNT; anterior++) {
+    for (const muestra of [0, 0.01, 0.24, 0.5, 0.74, 0.99, 1, NaN]) {
+      const i = randomSceneIndex(anterior, () => muestra);
+      assert.ok(Number.isInteger(i) && i >= 0 && i < SCENE_COUNT, `${anterior}, ${muestra} -> ${i}`);
+      assert.notEqual(i, anterior, `se repitio el escenario ${anterior}`);
     }
-    vistas.push(i);
   }
-  // en 20 rondas cada zona aparece exactamente cuatro veces
-  for (const i of [0, 1, 2, 3, 4]) assert.equal(vistas.filter((v) => v === i).length, 4);
+  assert.equal(randomSceneIndex(undefined, () => 0), 0);
+  assert.equal(randomSceneIndex(undefined, () => 0.999), SCENE_COUNT - 1);
 });
 
 test("el indice tolera rondas raras sin salirse de la lista", () => {
@@ -86,41 +85,44 @@ test("el indice tolera rondas raras sin salirse de la lista", () => {
 });
 
 test("la interfaz toma la lista de escenarios del modulo compartido", () => {
-  assert.match(pageSource, /import \{SCENES,sceneIndexFor\} from "@\/lib\/scenes";/);
+  assert.match(pageSource, /import \{SCENES,randomSceneIndex,sceneIndexFor\} from "@\/lib\/scenes";/);
   assert.doesNotMatch(pageSource, /const SCENES=\[/);
-  assert.match(pageSource, /sceneIndex=sceneIndexFor\(viewRound\)/);
-  assert.match(pageSource, /variant=sceneIndexFor\(s\.roundNo\)/);
+  assert.match(pageSource, /sceneIndex=roundEnded\?\(game\.nextScene\?\?currentScene\):currentScene/);
+  assert.match(pageSource, /variant=Number\.isInteger\(s\.scene\)\?s\.scene:sceneIndexFor\(s\.roundNo\)/);
   // el marcador nuevo tiene su glifo
   assert.match(pageSource, /scene\.kind==="sanmiguel"\?"▣"/);
 });
 
 test("la sala 1v1 calcula el terreno con el mismo indice que el fondo", () => {
-  assert.match(roomSource, /import \{sceneIndexFor\} from "@\/lib\/scenes";/);
-  assert.match(roomSource, /terrain=sceneIndexFor\(s\.roundNo\)/);
+  assert.match(roomSource, /import \{randomSceneIndex,sceneIndexFor\} from "@\/lib\/scenes";/);
+  assert.match(roomSource, /terrain=s\.scene/);
+  assert.match(roomSource, /s\.nextScene=randomSceneIndex\(s\.scene\)/);
   // sin cuenta de mapas escrita a mano
   assert.doesNotMatch(roomSource, /\(s\.roundNo\?\?1\)-1\)%4/);
 });
 
 test("el lienzo se repinta al cambiar de ronda o de escenario", () => {
-  // el fondo solo se pinta si la imagen esta lista y ademas se reintenta al decodificar
-  assert.match(pageSource, /\[draw,game\.positions,scene\.src,sceneIndex,game\.roundNo,viewCraters\]/);
+  // el fondo se intenta pintar ya y se repinta tanto al cargar como al decodificar
+  assert.match(pageSource, /bg\.addEventListener\("load",repaint\)/);
+  assert.match(pageSource, /bg\.decode\?\.\(\)\.then\(repaint\)/);
+  assert.match(pageSource, /bg\.removeEventListener\("load",repaint\)/);
   assert.match(pageSource, /if\(bg\.complete&&bg\.naturalWidth>0\)paint\(\);else bg\.onload=paint;void bg\.decode\?\.\(\)\.then\(paint\)/);
 });
 
 test("el mapa avanza solo al terminar la ronda, sin pulsar nada", () => {
-  // la vista adelanta una ronda 1.6 s despues del golpe final
+  // la vista usa el siguiente mapa ya elegido 1.6 s despues del golpe final
   assert.match(pageSource, /roundEnded=game\.winner!==null&&now-\(game\.lastEvent\.nonce\|\|0\)>1_600/);
-  assert.match(pageSource, /viewRound=\(game\.roundNo\?\?1\)\+\(roundEnded\?1:0\)/);
-  assert.match(pageSource, /sceneIndex=sceneIndexFor\(viewRound\)/);
+  assert.match(pageSource, /sceneIndex=roundEnded\?\(game\.nextScene\?\?currentScene\):currentScene/);
   // el campo de la ronda terminada deja de mostrarse: mapa nuevo y limpio
   assert.match(pageSource, /viewCraters=roundEnded\?noCraters:craters/);
   assert.match(pageSource, /draw\(undefined,undefined,sceneIndex,viewCraters\)/);
-  // los disparos siguen resolviendose con la ronda real del estado
-  assert.match(pageSource, /variant=sceneIndexFor\(s\.roundNo\)/);
+  // los disparos siguen resolviendose con el escenario real del estado
+  assert.match(pageSource, /variant=Number\.isInteger\(s\.scene\)\?s\.scene:sceneIndexFor\(s\.roundNo\)/);
 });
 
 test("el marcador de Miraflores usa el faro ilustrado, no un dibujo de CSS", () => {
   assert.match(pageSource, /scene\.kind==="faro"\?<img src="\/game\/faro-miraflores\.png"/);
+  assert.match(pageSource, /scene\.kind!=="faro"&&<span className="landmark-label">/);
   assert.ok(!pageSource.includes('scene.kind==="faro"?"◒"'), "ya no debe quedar el glifo del faro");
   const css = cssSourceForFaro;
   assert.ok(!/\.scene-landmark\.faro \.landmark-icon/.test(css), "el dibujo CSS del faro debe estar fuera");

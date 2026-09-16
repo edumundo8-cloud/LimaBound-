@@ -68,3 +68,45 @@
 
 .scene-landmark.faro{width:min(52%,300px)}
 .scene-landmark.faro img{max-height:168px;filter:drop-shadow(0 0 10px #ffd67b4d)}
+
+.system-notice{max-width:760px;margin:0 auto 8px;padding:7px 12px;border:1px solid #78edb255;border-radius:10px;background:#142b35e8;color:#caffdf;font-size:11px;font-weight:800;text-align:center;box-shadow:0 8px 22px #03081266}
+
+@media(max-width:680px){
+  html,body{overflow-x:hidden}
+  .game-shell{min-height:100dvh;padding:5px;overflow-x:hidden;overflow-y:auto}
+  .topbar{height:42px;padding:0 5px}
+  .system-notice{margin:0 4px 5px;padding:5px 8px;font-size:9px}
+  .battle{width:100%;border-width:2px;border-radius:16px;box-shadow:0 13px 34px #05081799,0 0 0 3px #27385c}
+  .battle canvas{width:100%;height:clamp(320px,52svh,390px);min-height:320px;max-height:390px}
+  .hud{top:47px;max-width:43%;gap:5px;padding:4px;border-radius:11px}
+  .hud.mine{left:6px;padding-right:7px}.hud.theirs{right:6px;padding-left:7px}
+  .hud img{width:34px;height:34px;border-radius:8px}
+  .hud small{font-size:7px}.hud strong{max-width:82px;overflow:hidden;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+  .hp{width:52px;height:5px;margin-top:3px}
+  .turn{top:4px;width:100%;pointer-events:none}
+  .turn>small{max-width:96%;overflow:hidden;font-size:7px;letter-spacing:.08em;text-overflow:ellipsis;white-space:nowrap}
+  .turn-clock{min-width:38px;margin:1px 0;padding:2px 5px}.turn-clock b{font-size:15px}
+  .turn-owner{padding:2px 7px;font-size:7px;letter-spacing:.08em}
+  .scene-read{margin-top:2px;padding:2px 7px;font-size:7px}
+  .wind-read{min-width:92px;height:21px;margin-top:2px!important;padding:2px 6px}.wind-read b{font-size:6px}.wind-read i{font-size:15px}.wind-read em{font-size:9px}.wind-read u{left:35px;width:20px}
+  .scene-landmark{width:clamp(102px,27%,145px);min-height:42px}.scene-landmark img{max-height:112px}.scene-landmark.faro{width:min(48%,180px)}.scene-landmark.faro img{max-height:132px}
+  .scene-landmark.gamarra .landmark-icon{width:88px;height:62px}.scene-landmark.gamarra .landmark-icon::before{font-size:8px}
+  .scene-landmark.sanmiguel .landmark-icon{width:92px;height:58px}
+  .fighter.custom-character{width:calc(var(--fighter-width)*.67);height:calc(var(--fighter-height)*.67)}
+  .dock{max-height:none;margin-top:7px;padding:7px;overflow:visible;border-radius:15px}
+  .power-control.wide>button{height:40px}.power-control.wide>button em{font-size:9px}
+  .aim{grid-template-columns:minmax(76px,1fr) 80px 90px;gap:6px}.aim label{font-size:8px}.aim label>b{font-size:11px}.fire,.special{min-height:48px;padding:4px 2px;font-size:10px}.fire small,.special small{font-size:7px}
+  .move{padding:7px 0}.move>div{width:115px}.move button{width:38px;height:34px}
+  .item-panel{gap:6px;padding-top:7px}.item-panel button{min-height:38px;padding:4px;font-size:9px}
+  .social{overflow-x:auto}.social>div{flex-shrink:0}.social>div button{width:29px;height:31px;padding:0;font-size:16px}
+  .joinbar{padding:0 5px}
+}
+
+@media(max-width:390px){
+  .brand{gap:6px;font-size:12px}.brand>span{width:30px;height:30px}.share{padding:8px}
+  .battle canvas{height:330px;min-height:330px}
+  .hud strong{max-width:68px}
+  .scene-landmark.faro{width:46%}
+  .character-select-panel{padding:12px 8px 15px}.character-select-panel h1{font-size:21px}.character-select-panel>p{font-size:10px}
+  .character-grid>button>span{height:78px}.character-grid strong{font-size:10px}
+}

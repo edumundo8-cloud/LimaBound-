@@ -62,15 +62,32 @@ export const SCENES: readonly Scene[] = [
 /** Cantidad de escenarios disponibles. */
 export const SCENE_COUNT = SCENES.length;
 
-/**
- * Escenario que corresponde a una ronda.
- *
- * Siempre avanza al pasar de ronda o de partida y vuelve al primero cuando
- * termina la vuelta completa, asi que despues de cada juego el fondo cambia.
- */
+/** Escenario determinista para recuperar partidas antiguas sin campo `scene`. */
 export const sceneIndexFor = (roundNo?: number): number => {
   const total = SCENES.length;
   const ronda = Math.trunc(Number(roundNo));
   const base = Number.isFinite(ronda) ? ronda : 1;
   return (((base - 1) % total) + total) % total;
+};
+
+/**
+ * Elige un escenario al azar. Si recibe el escenario anterior, evita repetirlo
+ * para que el cambio de ronda siempre resulte visible.
+ */
+export const randomSceneIndex = (
+  previous?: number,
+  random: () => number = Math.random,
+): number => {
+  const total = SCENES.length;
+  if (total <= 1) return 0;
+  const sampled = Number(random());
+  const normalized = Number.isFinite(sampled)
+    ? Math.max(0, Math.min(0.999999999, sampled))
+    : 0;
+  const previousIndex = Number.isInteger(previous) ? Number(previous) : -1;
+  if (previousIndex < 0 || previousIndex >= total) {
+    return Math.floor(normalized * total);
+  }
+  const candidate = Math.floor(normalized * (total - 1));
+  return candidate >= previousIndex ? candidate + 1 : candidate;
 };

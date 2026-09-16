@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Los mapas se eligen al azar al comenzar y al cambiar de ronda, sin repetir inmediatamente el anterior; la sala 1v1 guarda la elección para que ambos jugadores vean el mismo terreno.
+- El fondo vuelve a dibujarse al cargar o decodificar la imagen, evitando que el segundo juego espere una interacción para mostrarse.
+- Se quitaron los comentarios centrales entre turnos; permanecen el reloj, el estado del turno, el mapa y el viento. Miraflores conserva el faro ilustrado sin mostrar su rótulo.
+- La interfaz móvil ajusta selector, HUD, escenario y controles para pantallas de 390 px y menores.
 - El volteo de los personajes tiene en cuenta hacia donde mira cada ilustracion y el lado del campo, y se aplica sin la transicion del contenedor para que no se aplasten al girar.
 - Los personajes se voltean hacia el lado al que caminan y vuelven a mirar al rival al disparar.
 - El DUAL SHOT puede armarse en cualquier momento antes de disparar (ya no exige el turno exacto) y se desarma al empezar la ronda.
