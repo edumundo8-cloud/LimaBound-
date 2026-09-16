@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- El escenario avanza solo, sin pulsar nada, 1,6 s despues del golpe final: al terminar la ronda el campo queda limpio sobre el mapa siguiente y el boton solo arranca la ronda.
 - La vida del rival ya no baja antes de que el proyectil lo toque: la barra retiene el valor anterior y el golpeado se sacude y suelta un grito al recibir el impacto.
 - El lienzo se repinta al cambiar de ronda o de escenario, y solo cuando el fondo esta realmente listo (antes podia quedarse el mapa anterior hasta la siguiente accion).
 - El fondo avanza a la siguiente zona de Lima al pasar de ronda y al empezar una partida nueva, y vuelve a la primera al completar la vuelta.
