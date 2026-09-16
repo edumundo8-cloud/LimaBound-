@@ -87,7 +87,7 @@ test("el indice tolera rondas raras sin salirse de la lista", () => {
 test("la interfaz toma la lista de escenarios del modulo compartido", () => {
   assert.match(pageSource, /import \{SCENES,sceneIndexFor\} from "@\/lib\/scenes";/);
   assert.doesNotMatch(pageSource, /const SCENES=\[/);
-  assert.match(pageSource, /sceneIndex=sceneIndexFor\(game\.roundNo\)/);
+  assert.match(pageSource, /sceneIndex=sceneIndexFor\(viewRound\)/);
   assert.match(pageSource, /variant=sceneIndexFor\(s\.roundNo\)/);
   // el marcador nuevo tiene su glifo
   assert.match(pageSource, /scene\.kind==="sanmiguel"\?"▣"/);
@@ -98,4 +98,22 @@ test("la sala 1v1 calcula el terreno con el mismo indice que el fondo", () => {
   assert.match(roomSource, /terrain=sceneIndexFor\(s\.roundNo\)/);
   // sin cuenta de mapas escrita a mano
   assert.doesNotMatch(roomSource, /\(s\.roundNo\?\?1\)-1\)%4/);
+});
+
+test("el lienzo se repinta al cambiar de ronda o de escenario", () => {
+  // el fondo solo se pinta si la imagen esta lista y ademas se reintenta al decodificar
+  assert.match(pageSource, /\[draw,game\.positions,scene\.src,sceneIndex,game\.roundNo,viewCraters\]/);
+  assert.match(pageSource, /if\(bg\.complete&&bg\.naturalWidth>0\)paint\(\);else bg\.onload=paint;void bg\.decode\?\.\(\)\.then\(paint\)/);
+});
+
+test("el mapa avanza solo al terminar la ronda, sin pulsar nada", () => {
+  // la vista adelanta una ronda 1.6 s despues del golpe final
+  assert.match(pageSource, /roundEnded=game\.winner!==null&&now-\(game\.lastEvent\.nonce\|\|0\)>1_600/);
+  assert.match(pageSource, /viewRound=\(game\.roundNo\?\?1\)\+\(roundEnded\?1:0\)/);
+  assert.match(pageSource, /sceneIndex=sceneIndexFor\(viewRound\)/);
+  // el campo de la ronda terminada deja de mostrarse: mapa nuevo y limpio
+  assert.match(pageSource, /viewCraters=roundEnded\?noCraters:craters/);
+  assert.match(pageSource, /draw\(undefined,undefined,sceneIndex,viewCraters\)/);
+  // los disparos siguen resolviendose con la ronda real del estado
+  assert.match(pageSource, /variant=sceneIndexFor\(s\.roundNo\)/);
 });
