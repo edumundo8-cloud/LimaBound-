@@ -1,16 +1,17 @@
 import { env } from "cloudflare:workers";
 
 import {sceneIndexFor} from "@/lib/scenes";
+import {DEFAULT_CHARACTERS,characterById,isCharacterId,type CharacterId} from "@/lib/characters";
 
 type ChatLine={who:string;text:string;emote?:boolean};
 type Crater={x:number;r:number};
-type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;roundNo:number;matchWins:[number,number];turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];itemUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;terrain?:number;nonce:number};chat:ChatLine[]};
+type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;roundNo:number;matchWins:[number,number];characters:[CharacterId,CharacterId];turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];itemUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;terrain?:number;nonce:number};chat:ChatLine[]};
 const TURN_MS=10_000,TURN_PAUSE_MS=1_500,PROJECTILE_LOCK_MS=TURN_PAUSE_MS,DUAL_LOCK_MS=2_900;
 const blastRadius=(player:number,special:boolean)=>special?50:player===0?40:34;
 const craterRadius=(player:number,special:boolean)=>special?17:player===0?14:12;
 const clean=(v:unknown,n=80)=>String(v??"").trim().slice(0,n);
-const rivalQuips=["En el Callao primero se apunta. Luego se discute.","No es presión; es ambiente de partido.","La puntería también juega de visitante.","Rosado por fuera. Problemas por dentro."];
-const fresh=(matchWins:[number,number]=[0,0],roundNo=1):GameState=>({positions:[122,638],hp:[160,160],turn:0,turnNo:1,roundNo,matchWins,turnStartedAt:Date.now(),moved:[0,0],turnsTaken:[0,0],specialReadyAt:[0,0],itemUsed:[false,false],wind:Math.round(Math.random()*28-14),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:"El Rosado",text:rivalQuips[Math.floor(Math.random()*rivalQuips.length)]}]});
+const rivalQuips=["En el Callao primero se apunta. Luego se discute.","No es presión; es ambiente de partido.","La puntería también juega de visitante.","Lima por fuera. Problemas por dentro."];
+const fresh=(matchWins:[number,number]=[0,0],roundNo=1,characters:[CharacterId,CharacterId]=[...DEFAULT_CHARACTERS]):GameState=>({positions:[122,638],hp:[160,160],turn:0,turnNo:1,roundNo,matchWins,characters:[...characters],turnStartedAt:Date.now(),moved:[0,0],turnsTaken:[0,0],specialReadyAt:[0,0],itemUsed:[false,false],wind:Math.round(Math.random()*28-14),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:characterById(characters[1]).name,text:rivalQuips[Math.floor(Math.random()*rivalQuips.length)]}]});
 const groundAt=(x:number,craters:Crater[]=[],variant=0)=>{const profile=((variant%4)+4)%4;let y=profile===0?303+18*Math.sin(x/58)+10*Math.sin(x/27)+5*Math.sin(x/13):profile===1?300+24*Math.sin(x/128+.45)+9*Math.sin(x/31)+4*Math.cos(x/17):profile===2?307+18*Math.sin(x/43+1.2)+11*Math.sin(x/19)+5*Math.cos(x/83):300+25*Math.sin(x/96+1.7)+8*Math.sin(x/25+.5)+4*Math.cos(x/15);for(const c of craters){const d=Math.abs(x-c.x);if(d<c.r)y+=Math.sqrt(c.r*c.r-d*d)*.42}return y};
 const db=()=>{if(!env.DB)throw new Error("DB unavailable");return env.DB};
 
@@ -25,7 +26,7 @@ export async function POST(req:Request){
   const p=await req.json() as Record<string,unknown>;const action=clean(p.action,12);const code=clean(p.code,8).toUpperCase();const token=clean(p.token,80);
   if(action==="create"){
     if(!code||!token)return Response.json({error:"Missing room data"},{status:400});
-    const state=fresh();
+    const state=fresh();if(isCharacterId(p.character))state.characters[0]=p.character;
     try{await db().prepare("INSERT INTO rooms (code, host_token, state, revision, updated_at) VALUES (?, ?, ?, 0, ?)").bind(code,token,JSON.stringify(state),Date.now()).run();}
     catch{return Response.json({error:"Code collision"},{status:409})}
     return Response.json({code,role:0,state,revision:0});
@@ -35,7 +36,7 @@ export async function POST(req:Request){
   if(action==="join"){
     if(row.host_token===token)return Response.json({role:0,state:JSON.parse(row.state),revision:row.revision});
     if(row.guest_token&&row.guest_token!==token)return Response.json({error:"La sala está completa: dos jugadores, una mala decisión."},{status:409});
-    const joined=JSON.parse(row.state) as GameState;
+    const joined=JSON.parse(row.state) as GameState;joined.characters=joined.characters??[...DEFAULT_CHARACTERS];if(isCharacterId(p.character))joined.characters[1]=p.character;
     if(!row.guest_token){joined.turnStartedAt=Date.now();await db().prepare("UPDATE rooms SET guest_token=?, state=?, updated_at=? WHERE code=? AND guest_token IS NULL").bind(token,JSON.stringify(joined),Date.now(),code).run()}
     return Response.json({role:1,state:joined,revision:row.revision});
   }
@@ -43,8 +44,10 @@ export async function POST(req:Request){
   if(player<0)return Response.json({error:"No perteneces a esta partida."},{status:403});
   const s=JSON.parse(row.state) as GameState;
   s.turnStartedAt=s.turnStartedAt??Date.now();
-  s.turnsTaken=s.turnsTaken??[0,0];s.specialReadyAt=s.specialReadyAt??[0,0];s.itemUsed=s.itemUsed??[false,false];s.matchWins=s.matchWins??[0,0];s.roundNo=s.roundNo??1;
-  if(action==="move"){
+  s.turnsTaken=s.turnsTaken??[0,0];s.specialReadyAt=s.specialReadyAt??[0,0];s.itemUsed=s.itemUsed??[false,false];s.matchWins=s.matchWins??[0,0];s.characters=s.characters??[...DEFAULT_CHARACTERS];s.roundNo=s.roundNo??1;
+  if(action==="select"){
+    if(!isCharacterId(p.character))return Response.json({error:"Personaje desconocido."},{status:400});s.characters[player]=p.character;if(s.turnNo===1&&s.lastEvent.type==="start")s.turnStartedAt=Date.now();
+  }else if(action==="move"){
     if(s.turn!==player||s.winner!==null)return Response.json({error:"Todavía no es tu turno."},{status:409});
     if(Date.now()<s.turnStartedAt)return Response.json({error:"El siguiente turno aún no empieza."},{status:409});
     if(Date.now()>=s.turnStartedAt+TURN_MS)return Response.json({error:"Tu tiempo terminó."},{status:409});
@@ -68,12 +71,12 @@ export async function POST(req:Request){
     if(Date.now()<s.turnStartedAt+TURN_MS)return Response.json({error:"El turno todavía tiene tiempo."},{status:409});
     const expired=s.turn,target=(1-expired) as 0|1;s.turnsTaken[expired]++;s.turn=target;s.turnNo++;s.turnStartedAt=Date.now()+TURN_PAUSE_MS;s.moved[target]=0;let windChanged=false;if((s.turnNo-1)%4===0){s.wind=Math.round(Math.random()*28-14);windChanged=true}s.lastEvent={type:"timeout",player:expired,windChanged,nonce:Date.now()};
   }else if(action==="chat"||action==="emote"){
-    const text=clean(p.text,80);if(text)s.chat=[...s.chat.slice(-24),{who:player===0?"Chaski":"El Rosado",text,emote:action==="emote"}];
+    const text=clean(p.text,80);if(text)s.chat=[...s.chat.slice(-24),{who:characterById(s.characters[player]).name,text,emote:action==="emote"}];
   }else if(action==="rematch"){
     if(s.winner===null)return Response.json({state:s,revision:row.revision});
     const matchOver=Math.max(...s.matchWins)>=2;
     const nextScene=s.roundNo+1;
-    Object.assign(s,matchOver?fresh([0,0],nextScene):fresh([...s.matchWins] as [number,number],nextScene));
+    Object.assign(s,matchOver?fresh([0,0],nextScene,s.characters):fresh([...s.matchWins] as [number,number],nextScene,s.characters));
   }else return Response.json({error:"Unknown action"},{status:400});
   const next=row.revision+1;const out=await db().prepare("UPDATE rooms SET state=?, revision=?, updated_at=? WHERE code=? AND revision=?").bind(JSON.stringify(s),next,Date.now(),code,row.revision).run();
   if(!out.meta.changes)return Response.json({error:"sync"},{status:409});
