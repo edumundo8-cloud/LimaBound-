@@ -147,10 +147,10 @@ button:focus-visible,input:focus-visible{outline:3px solid #9bf7c5;outline-offse
 
 @media(max-width:680px){.invite-card{grid-template-columns:1fr auto;margin:0 4px 6px;padding:8px 9px}.invite-card div{grid-column:1/-1}.invite-card strong{font-size:13px}.invite-card span{font-size:10px}.room-code,.invite-action{min-height:40px}.room-code code{font-size:15px}.invite-action{padding:0 10px;font-size:11px}.social{overflow:visible}.social .chatbutton,.voice-button{min-height:39px;padding:7px 9px;font-size:11px}.joinbar{grid-template-columns:1fr auto;margin-top:7px}.joinbar label{grid-column:1/-1;font-size:12px}.joinbar small{grid-column:1/-1}.chat{right:10px;bottom:10px}}
 
-/* En pantallas de telefono el chat forma parte del documento: nunca tapa controles,
-   invitaciones ni otros dialogos. */
+/* El chat forma parte del documento: nunca tapa controles, invitaciones ni otros dialogos. */
+.chat{position:relative;right:auto;bottom:auto;margin:10px auto 0}
 @media(max-width:680px){
-  .chat{position:relative;right:auto;bottom:auto;width:min(100%,620px);margin:8px auto 0}
+  .chat{width:min(100%,620px);margin-top:8px}
 }
 
 @media(max-width:950px) and (max-height:650px) and (orientation:landscape){

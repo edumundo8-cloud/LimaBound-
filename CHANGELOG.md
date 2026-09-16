@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- En celulares, incluido el modo horizontal, el chat deja de flotar sobre los controles y pasa al flujo de la página; la selección de personaje y el HUD también se compactan para evitar cruces.
+- El chat deja de flotar sobre los controles y pasa al flujo de la página en todas las pantallas; en celular horizontal, la selección de personaje y el HUD también se compactan para evitar cruces.
 - El jugador 2 puede entrar directamente desde el enlace compartido o usar un código de sala visible y fácil de copiar.
 - El chat ocupa menos espacio, conserva solo tres reacciones rápidas y limita el historial visible a los mensajes recientes.
 - Las salas 1v1 incluyen voz opcional entre navegadores, con permiso explícito de micrófono, estado de conexión, silencio y salida de voz.

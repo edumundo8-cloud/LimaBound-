@@ -29,7 +29,8 @@ test("el chat muestra menos reacciones rápidas",()=>{
  assert.match(page,/game\.chat\.slice\(-12\)/);
 });
 
-test("el chat no se superpone a los controles en celular horizontal",()=>{
+test("el chat no se superpone a los controles, incluido celular horizontal",()=>{
+ assert.match(css,/\.chat\{position:relative;right:auto;bottom:auto;margin:10px auto 0\}/);
  assert.match(css,/@media\(max-width:950px\) and \(max-height:650px\) and \(orientation:landscape\)/);
  assert.match(css,/\.chat\{position:relative;right:auto;bottom:auto;width:min\(100%,720px\)/);
  assert.match(css,/\.character-grid\{grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
