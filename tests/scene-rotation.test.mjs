@@ -89,8 +89,8 @@ test("la interfaz toma la lista de escenarios del modulo compartido", () => {
   assert.doesNotMatch(pageSource, /const SCENES=\[/);
   assert.match(pageSource, /sceneIndex=roundEnded\?\(game\.nextScene\?\?currentScene\):currentScene/);
   assert.match(pageSource, /variant=Number\.isInteger\(s\.scene\)\?s\.scene:sceneIndexFor\(s\.roundNo\)/);
-  // el marcador nuevo tiene su glifo
-  assert.match(pageSource, /scene\.kind==="sanmiguel"\?"▣"/);
+  // San Miguel has a gap instead of the central landmark.
+  assert.match(pageSource, /scene\.kind!=="sanmiguel"&&<div className/);
 });
 
 test("la sala 1v1 calcula el terreno con el mismo indice que el fondo", () => {

@@ -6,20 +6,20 @@ const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "
 
 test("animates projectiles at one simulation step per frame", () => {
   assert.doesNotMatch(pageSource, /for\(let step=0;step<2;step\+\+\)/);
-  assert.match(pageSource, /const tick=\(\)=>\{x\+=dx;y\+=dy;dy\+=\.17;dx\+=shotWind\*\.0019;n\+\+;/);
+  assert.match(pageSource, /const tick=\(\)=>\{\(\{x,y,dx,dy\}=stepProjectile\(x,y,dx,dy,shotWind,shotTornado\)\);n\+\+;/);
 });
 
 test("fires the ready basic shot with Space on desktop", () => {
   assert.match(pageSource, /e\.code!=="Space"/);
   assert.match(pageSource, /matchMedia\("\(pointer: fine\)"\)/);
-  assert.match(pageSource, /act\("fire",\{angle,power,special:false,dual:dualArmed\}\)/);
+  assert.match(pageSource, /act\("fire",\{angle,power,special:specialArmed,dual:dualArmed&&!specialArmed\}\)/);
 });
 
 test("supports desktop arrow controls for aim and movement", () => {
   assert.match(pageSource, /e\.code==="ArrowUp"\|\|e\.code==="ArrowDown"/);
   assert.match(pageSource, /setAngle\(current=>Math\.max\(18,Math\.min\(78,current\+/);
   assert.match(pageSource, /e\.code==="ArrowLeft"\|\|e\.code==="ArrowRight"/);
-  assert.match(pageSource, /act\("move",\{delta:e\.code==="ArrowLeft"\?-34:34\}\)/);
+  assert.match(pageSource, /act\("move",\{delta:e\.code==="ArrowLeft"\?-MOVE_STEP:MOVE_STEP\}\)/);
 });
 
 test("charges with Space and fires on release", () => {

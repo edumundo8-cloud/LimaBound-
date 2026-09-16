@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Las reglas de impacto (radio de explosion, crater, radio del objetivo y dano del SS) viven una sola vez en `lib/battle.ts`; cliente y sala las importan, asi que ya no pueden quedar desincronizadas.
+- El hueco de Plaza San Miguel sigue la rasante real del terreno y muestra el canto del asfalto, la pared del fondo iluminada y sombra de contacto.
+- El aviso de la sala en la URL se agenda fuera del efecto de conexion: se acaba el error de lint por `setState` sincronico dentro del efecto.
+- Plaza San Miguel sustituye el objeto central por un hueco sin suelo que no se puede cruzar.
+- El campo y el recorrido de cada lado crecen un 10%; el movimiento por turno pasa de 104 a 114,4.
+- SS se selecciona antes de cargar y se lanza con el botón de disparo o la barra espaciadora; no se combina con Dual Shot.
+- Después de cada seis turnos aparece un tornado vertical en una posición aleatoria durante dos turnos (uno por jugador). Su giro desvía los proyectiles; práctica, salas y animación comparten la misma física.
 - Los mapas se eligen al azar al comenzar y al cambiar de ronda, sin repetir inmediatamente el anterior; la sala 1v1 guarda la elección para que ambos jugadores vean el mismo terreno.
 - El fondo vuelve a dibujarse al cargar o decodificar la imagen, evitando que el segundo juego espere una interacción para mostrarse.
 - Se quitaron los comentarios centrales entre turnos; permanecen el reloj, el estado del turno, el mapa y el viento. Miraflores conserva el faro ilustrado sin mostrar su rótulo.

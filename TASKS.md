@@ -3,11 +3,12 @@
 ## Próximo ciclo
 
 - [ ] Corregir los 2 tests heredados del starter que fallan por `cloudflare:` y utilidades de animación de Tailwind.
-- [ ] Corregir los 2 errores de lint preexistentes por `setState` dentro de efectos.
+- [x] Corregir el error de lint preexistente por `setState` dentro del efecto de conexión.
 - [ ] Probar una partida completa 1v1 en dos teléfonos.
 - [ ] Confirmar en el navegador que el fondo cambia al empezar cada juego sin tocar nada mas (el repintado se endureció sin poder ver un navegador desde el entorno de trabajo).
-- [ ] Revisar el marcador del centro en Plaza San Miguel: el objeto sobre el óvalo no termina de gustar.
+- [x] Sustituir el marcador central de Plaza San Miguel por un hueco infranqueable.
 - [ ] Verificar que el viento visible coincida con su efecto real sobre los disparos.
+- [ ] Revisar a ojo el hueco de San Miguel y el tornado en el teléfono: el hueco es CSS estilizado (no una ilustración como los fondos) y puede pedir un recurso pintado.
 - [ ] Revisar balance entre Bala 1 y los ataques especiales.
 - [ ] Revisar que SS mantenga exactamente 20% más daño que su valor anterior.
 - [ ] Probar desplazamiento y animación de piernas en todas las pendientes.

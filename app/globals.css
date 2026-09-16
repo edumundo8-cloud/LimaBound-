@@ -69,6 +69,31 @@
 .scene-landmark.faro{width:min(52%,300px)}
 .scene-landmark.faro img{max-height:168px;filter:drop-shadow(0 0 10px #ffd67b4d)}
 
+.battle{max-width:1298px}
+.special.selected{outline:2px solid #f4d4ff;box-shadow:0 0 18px #c98aff88,0 5px 0 #4a2a9d}
+.fire.special-ready{background:linear-gradient(#df9aff,#8650d8);color:#fff}
+/* Hueco central de Plaza San Miguel. El borde superior sigue la rasante real del terreno
+   (la misma curva que el lienzo usa en la boca), asi que calza con la pista por los dos
+   lados. Adentro: la pared del fondo recibe la luz de la calle y el resto cae a negro. */
+.sinkhole{position:absolute;z-index:1;left:44.258%;width:11.484%;top:76.13%;bottom:-1px;pointer-events:none;
+ background:linear-gradient(180deg,#8d96a4 0,#5d677b 12%,#3b4559 26%,#232b3b 44%,#111621 64%,#05070d 84%,#010206 100%);
+ clip-path:polygon(0% 0%,10.4% 8.1%,22.9% 14.3%,35.4% 16.8%,47.9% 17.8%,60.4% 19.5%,72.9% 22.8%,85.4% 26.5%,95.8% 28.2%,100% 28.2%,100% 100%,0 100%);
+ filter:drop-shadow(0 0 6px #000000b8);
+ box-shadow:inset 2px 0 0 #7d8ba3a6,inset -2px 0 0 #4d58719e,inset 14px 0 16px #000c,inset -14px 0 16px #000c,inset 0 -22px 32px #000,inset 0 3px 7px #000a}
+.sinkhole:before{content:"";position:absolute;left:0;right:0;top:0;bottom:0;
+ background:linear-gradient(90deg,#0000,#c9b283a6 5%,#fdeecbf2 20%,#f0dcb4e6 46%,#c6ad7f9e 74%,#0000);
+ clip-path:polygon(0% 0%,10.4% 8.1%,22.9% 14.3%,35.4% 16.8%,47.9% 17.8%,60.4% 19.5%,72.9% 22.8%,85.4% 26.5%,95.8% 28.2%,100% 28.2%,100% 100%,0 100%);
+ mask-image:linear-gradient(#000 7%,#0000 7%);-webkit-mask-image:linear-gradient(#000 7%,#0000 7%)}
+.sinkhole:after{content:"";position:absolute;left:5%;right:5%;top:0;height:18%;background:
+ radial-gradient(78% 100% at 50% 0,#d3e0ff2e 0,#0000 74%)}
+.tornado{position:absolute;inset:0 auto 0 0;z-index:2;transform:translateX(-50%);pointer-events:none;overflow:hidden;background:linear-gradient(90deg,transparent,#c4dcf025,transparent);filter:drop-shadow(0 0 7px #b0d6ff66)}
+.tornado i{position:absolute;left:2%;width:96%;height:14%;border:2px solid #c9e6fac2;border-left-color:transparent;border-right-color:#799ac166;border-radius:50%;background:linear-gradient(110deg,transparent,#d3edff2e,transparent);animation:vortex-spin 1.2s linear infinite;transform-origin:50% 50%}
+.tornado i:nth-child(1){top:-3%}.tornado i:nth-child(2){top:10%;animation-delay:-.15s}.tornado i:nth-child(3){top:23%;animation-delay:-.3s}.tornado i:nth-child(4){top:36%;animation-delay:-.45s}.tornado i:nth-child(5){top:49%;animation-delay:-.6s}.tornado i:nth-child(6){top:62%;animation-delay:-.75s}.tornado i:nth-child(7){top:75%;animation-delay:-.9s}.tornado i:nth-child(8){top:88%;animation-delay:-1.05s}
+.tornado.counterclockwise i{animation-direction:reverse}
+.tornado span{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);padding:2px 5px;background:#152c46d9;border-radius:6px;color:#d8efff;font-size:7px;letter-spacing:.08em}
+@keyframes vortex-spin{0%{translate:-9% -6%;scale:.72 1;opacity:.45}50%{translate:9% 4%;scale:1 1;opacity:1}100%{translate:-9% -6%;scale:.72 1;opacity:.45}}
+@media(prefers-reduced-motion:reduce){.tornado i{animation:none}}
+
 .system-notice{max-width:760px;margin:0 auto 8px;padding:7px 12px;border:1px solid #78edb255;border-radius:10px;background:#142b35e8;color:#caffdf;font-size:11px;font-weight:800;text-align:center;box-shadow:0 8px 22px #03081266}
 
 @media(max-width:680px){

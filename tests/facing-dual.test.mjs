@@ -28,7 +28,7 @@ test("al disparar miran hacia el rival", () => {
 });
 
 test("al empezar una ronda vuelven a mirarse de frente y el DUAL se desarma", () => {
-  contains("if(game.lastEvent.type===\"start\"){setHpHold(null);setHitCry(null);setFacing([1,-1]);setSelectedItem(\"none\")");
+  contains("if(game.lastEvent.type===\"start\"){setFlightWeather(null);setHpHold(null);setHitCry(null);setFacing([1,-1]);setSelectedItem(\"none\");setSelectedShot(\"basic\");lastPos.current=[...initial.positions] as [number,number]");
 });
 
 test("cada ilustracion declara hacia donde mira tal cual viene", () => {
@@ -49,6 +49,11 @@ test("el volteo combina la direccion, la ilustracion y el lado del combatiente",
 
 test("el DUAL se puede armar en cualquier momento antes de disparar", () => {
   contains("dualArmed=itemAvailable&&selectedItem===\"dual\"");
-  contains("disabled={!itemAvailable} onClick={()=>setSelectedItem(dualArmed?\"none\":\"dual\")}");
+  contains("disabled={!itemAvailable} onClick={()=>{setSelectedItem(dualArmed?\"none\":\"dual\");setSelectedShot(\"basic\")}}");
   assert.ok(!pageSource.includes("selectedItemTurn"), "el DUAL ya no debe depender del numero de turno");
+});
+
+test("al empezar una ronda tambien se desarma el SS y se limpia el clima del disparo", () => {
+  contains('setSelectedShot("basic")');
+  contains("setFlightWeather(null)");
 });
