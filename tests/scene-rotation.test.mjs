@@ -99,3 +99,9 @@ test("la sala 1v1 calcula el terreno con el mismo indice que el fondo", () => {
   // sin cuenta de mapas escrita a mano
   assert.doesNotMatch(roomSource, /\(s\.roundNo\?\?1\)-1\)%4/);
 });
+
+test("el lienzo se repinta al cambiar de ronda o de escenario", () => {
+  // el fondo solo se pinta si la imagen esta lista y ademas se reintenta al decodificar
+  assert.match(pageSource, /\[draw,game\.positions,scene\.src,sceneIndex,game\.roundNo\]/);
+  assert.match(pageSource, /if\(bg\.complete&&bg\.naturalWidth>0\)paint\(\);else bg\.onload=paint;void bg\.decode\?\.\(\)\.then\(paint\)/);
+});

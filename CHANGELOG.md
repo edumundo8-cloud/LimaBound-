@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- La vida del rival ya no baja antes de que el proyectil lo toque: la barra retiene el valor anterior y el golpeado se sacude y suelta un grito al recibir el impacto.
+- El lienzo se repinta al cambiar de ronda o de escenario, y solo cuando el fondo esta realmente listo (antes podia quedarse el mapa anterior hasta la siguiente accion).
 - El fondo avanza a la siguiente zona de Lima al pasar de ronda y al empezar una partida nueva, y vuelve a la primera al completar la vuelta.
 - Plaza San Miguel entra en la rotación con su propio fondo nocturno y el marcador del óvalo de La Marina.
 - La lista de escenarios vive en `lib/scenes.ts`; la sala 1v1 calcula el relieve con ese mismo índice en lugar de asumir cuatro mapas.

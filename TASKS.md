@@ -5,6 +5,8 @@
 - [ ] Corregir los 2 tests heredados del starter que fallan por `cloudflare:` y utilidades de animación de Tailwind.
 - [ ] Corregir los 2 errores de lint preexistentes por `setState` dentro de efectos.
 - [ ] Probar una partida completa 1v1 en dos teléfonos.
+- [ ] Confirmar en el navegador que el fondo cambia al empezar cada juego sin tocar nada mas (el repintado se endureció sin poder ver un navegador desde el entorno de trabajo).
+- [ ] Revisar el marcador del centro en Plaza San Miguel: el objeto sobre el óvalo no termina de gustar.
 - [ ] Verificar que el viento visible coincida con su efecto real sobre los disparos.
 - [ ] Revisar balance entre Bala 1 y los ataques especiales.
 - [ ] Revisar que SS mantenga exactamente 20% más daño que su valor anterior.
@@ -38,6 +40,6 @@ Pruebas necesarias:
 ## Línea base técnica — 2026-09-15
 
 - La compilación de producción termina correctamente.
-- `npm test`: 16 pruebas pasan y siguen fallando solo las 2 heredadas del starter.
+- `npm test`: 21 pruebas pasan y siguen fallando solo las 2 heredadas del starter.
 - `npm run lint`: 2 errores preexistentes y 15 advertencias (los mismos de antes de la rotación de mapas).
-- `lib/scenes.ts` concentra la lista de escenarios y `tests/scene-rotation.test.mjs` fija la rotación (8 pruebas).
+- `lib/scenes.ts` concentra la lista de escenarios; la rotación y la reacción al golpe tienen pruebas propias (14 en total).

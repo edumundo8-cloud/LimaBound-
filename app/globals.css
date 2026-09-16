@@ -54,3 +54,9 @@
 @keyframes impact-ring-realistic{0%{scale:.12;opacity:1}20%{scale:1.4;opacity:.9}58%{scale:4.8;opacity:.45}100%{scale:8;opacity:0}}
 @keyframes terrain-chip-realistic{0%{translate:-50% -50%;scale:.3;opacity:1}24%{translate:-50% -77px;scale:1.1;opacity:1}62%{translate:-50% -52px;scale:.92;opacity:.8}100%{translate:-50% -19px;scale:.45;opacity:0}}
 @keyframes smoke-rise-realistic{0%{scale:.25;opacity:.05;filter:blur(1px)}26%{scale:1.05;opacity:.78;filter:blur(2px)}58%{scale:1.65;opacity:.48;filter:blur(4px)}100%{translate:0 -57px;scale:2.7;opacity:0;filter:blur(8px)}}
+
+/* Reaccion al golpe: el combatiente se sacude y suelta el grito cuando el proyectil lo toca. */
+.fighter.hurt{animation:hurt-shake .52s cubic-bezier(.36,.07,.19,.97) 1}
+.hit-cry{position:absolute;left:50%;bottom:100%;z-index:9;transform:translate(-50%,-4px);padding:3px 9px;border:1px solid #ffffff5c;border-radius:99px;background:#2b0f19e8;color:#ffdcdc;font-size:11px;font-weight:900;font-style:normal;letter-spacing:.02em;white-space:nowrap;text-shadow:0 1px 3px #120610;box-shadow:0 5px 14px #12061099;pointer-events:none;animation:hit-cry-pop 1.05s ease-out forwards}
+@keyframes hurt-shake{0%,100%{transform:translateX(-50%) rotate(var(--tilt,0deg))}20%{transform:translateX(-50%) translateX(-6px) rotate(calc(var(--tilt,0deg) - 7deg))}42%{transform:translateX(-50%) translateX(5px) rotate(calc(var(--tilt,0deg) + 6deg))}64%{transform:translateX(-50%) translateX(-3px) rotate(calc(var(--tilt,0deg) - 4deg))}84%{transform:translateX(-50%) translateX(2px) rotate(var(--tilt,0deg))}}
+@keyframes hit-cry-pop{0%{opacity:0;transform:translate(-50%,2px) scale(.72)}16%{opacity:1;transform:translate(-50%,-11px) scale(1.08)}66%{opacity:1;transform:translate(-50%,-17px) scale(1)}100%{opacity:0;transform:translate(-50%,-27px) scale(.95)}}
