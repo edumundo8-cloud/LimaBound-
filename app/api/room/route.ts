@@ -5,12 +5,13 @@ import {DEFAULT_CHARACTERS,characterById,isCharacterId,type CharacterId} from "@
 
 import {FIELD_WIDTH,blastRadius,craterRadius,groundAt,movePosition,shotDamage,stepProjectile,targetRadiusFor,tornadoForTurn,type Tornado} from "@/lib/battle";
 type ChatLine={who:string;text:string;emote?:boolean};
+type VoiceSignal={id:string;from:0|1;kind:"ready"|"offer"|"answer"|"candidate"|"leave";payload?:string};
 type Crater={x:number;r:number};
-type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;roundNo:number;weatherSeed:number;scene:number;nextScene:number|null;matchWins:[number,number];characters:[CharacterId,CharacterId];turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];itemUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;terrain?:number;tornado?:Tornado|null;nonce:number};chat:ChatLine[]};
+type GameState={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;roundNo:number;weatherSeed:number;scene:number;nextScene:number|null;matchWins:[number,number];characters:[CharacterId,CharacterId];turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];itemUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;from?:number;to?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;terrain?:number;tornado?:Tornado|null;nonce:number};chat:ChatLine[];voiceSignals:VoiceSignal[]};
 const TURN_MS=10_000,TURN_PAUSE_MS=1_500,PROJECTILE_LOCK_MS=TURN_PAUSE_MS,DUAL_LOCK_MS=2_900;
 const clean=(v:unknown,n=80)=>String(v??"").trim().slice(0,n);
 const rivalQuips=["En el Callao primero se apunta. Luego se discute.","No es presión; es ambiente de partido.","La puntería también juega de visitante.","Lima por fuera. Problemas por dentro."];
-const fresh=(matchWins:[number,number]=[0,0],roundNo=1,characters:[CharacterId,CharacterId]=[...DEFAULT_CHARACTERS],scene=randomSceneIndex()):GameState=>({positions:[134.2,701.8],hp:[160,160],turn:0,turnNo:1,roundNo,weatherSeed:Math.floor(Math.random()*2147483647),scene,nextScene:null,matchWins,characters:[...characters],turnStartedAt:Date.now(),moved:[0,0],turnsTaken:[0,0],specialReadyAt:[0,0],itemUsed:[false,false],wind:Math.round(Math.random()*28-14),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:characterById(characters[1]).name,text:rivalQuips[Math.floor(Math.random()*rivalQuips.length)]}]});
+const fresh=(matchWins:[number,number]=[0,0],roundNo=1,characters:[CharacterId,CharacterId]=[...DEFAULT_CHARACTERS],scene=randomSceneIndex()):GameState=>({positions:[134.2,701.8],hp:[160,160],turn:0,turnNo:1,roundNo,weatherSeed:Math.floor(Math.random()*2147483647),scene,nextScene:null,matchWins,characters:[...characters],turnStartedAt:Date.now(),moved:[0,0],turnsTaken:[0,0],specialReadyAt:[0,0],itemUsed:[false,false],wind:Math.round(Math.random()*28-14),winner:null,craters:[],lastEvent:{type:"start",nonce:Date.now()},chat:[{who:characterById(characters[1]).name,text:rivalQuips[Math.floor(Math.random()*rivalQuips.length)]}],voiceSignals:[]});
 const db=()=>{if(!env.DB)throw new Error("DB unavailable");return env.DB};
 
 export async function GET(req:Request){
@@ -43,7 +44,7 @@ export async function POST(req:Request){
   if(player<0)return Response.json({error:"No perteneces a esta partida."},{status:403});
   const s=JSON.parse(row.state) as GameState;
   s.turnStartedAt=s.turnStartedAt??Date.now();
-  s.turnsTaken=s.turnsTaken??[0,0];s.specialReadyAt=s.specialReadyAt??[0,0];s.itemUsed=s.itemUsed??[false,false];s.matchWins=s.matchWins??[0,0];s.characters=s.characters??[...DEFAULT_CHARACTERS];s.roundNo=s.roundNo??1;s.scene=Number.isInteger(s.scene)?s.scene:sceneIndexFor(s.roundNo);s.nextScene=Number.isInteger(s.nextScene)?s.nextScene:null;
+  s.turnsTaken=s.turnsTaken??[0,0];s.specialReadyAt=s.specialReadyAt??[0,0];s.itemUsed=s.itemUsed??[false,false];s.matchWins=s.matchWins??[0,0];s.characters=s.characters??[...DEFAULT_CHARACTERS];s.voiceSignals=s.voiceSignals??[];s.roundNo=s.roundNo??1;s.scene=Number.isInteger(s.scene)?s.scene:sceneIndexFor(s.roundNo);s.nextScene=Number.isInteger(s.nextScene)?s.nextScene:null;
   if(action==="select"){
     if(!isCharacterId(p.character))return Response.json({error:"Personaje desconocido."},{status:400});s.characters[player]=p.character;if(s.turnNo===1&&s.lastEvent.type==="start")s.turnStartedAt=Date.now();
   }else if(action==="move"){
@@ -70,6 +71,8 @@ export async function POST(req:Request){
     const expired=s.turn,target=(1-expired) as 0|1;s.turnsTaken[expired]++;s.turn=target;s.turnNo++;s.turnStartedAt=Date.now()+TURN_PAUSE_MS;s.moved[target]=0;let windChanged=false;if((s.turnNo-1)%4===0){s.wind=Math.round(Math.random()*28-14);windChanged=true}s.lastEvent={type:"timeout",player:expired,windChanged,nonce:Date.now()};
   }else if(action==="chat"||action==="emote"){
     const text=clean(p.text,80);if(text)s.chat=[...s.chat.slice(-24),{who:characterById(s.characters[player]).name,text,emote:action==="emote"}];
+  }else if(action==="voice"){
+    const kind=clean(p.kind,12) as VoiceSignal["kind"],allowed=["ready","offer","answer","candidate","leave"];if(!allowed.includes(kind))return Response.json({error:"Señal de voz desconocida."},{status:400});const payload=String(p.payload??"").slice(0,18_000);s.voiceSignals=[...s.voiceSignals.slice(-39),{id:crypto.randomUUID(),from:player,kind,...(payload?{payload}:{})}];
   }else if(action==="rematch"){
     if(s.winner===null)return Response.json({state:s,revision:row.revision});
     const matchOver=Math.max(...s.matchWins)>=2;
