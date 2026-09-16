@@ -27,7 +27,7 @@ test("el valor retenido se libera justo al tocar el objetivo", () => {
 });
 
 test("al empezar una ronda se limpia cualquier reaccion pendiente", () => {
-  contains("if(game.lastEvent.type===\"start\"){setHpHold(null);setHitCry(null)}");
+  contains("if(game.lastEvent.type===\"start\"){setHpHold(null);setHitCry(null)");
 });
 
 test("el golpeado se sacude y suelta el grito", () => {

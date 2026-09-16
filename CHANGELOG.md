@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Los personajes se voltean hacia el lado al que caminan y vuelven a mirar al rival al disparar.
+- El DUAL SHOT puede armarse en cualquier momento antes de disparar (ya no exige el turno exacto) y se desarma al empezar la ronda.
 - El marcador de Miraflores deja de ser un dibujo de CSS: ahora usa una ilustración del faro (`public/game/faro-miraflores.png`), con tono nocturno y sombra de apoyo.
 - Se añadió una selección inicial con seis personajes peruanos; el Perro Peruano reemplaza a Chaski y la elección se sincroniza en salas 1v1.
 - El escenario avanza solo, sin pulsar nada, 1,6 s despues del golpe final: al terminar la ronda el campo queda limpio sobre el mapa siguiente y el boton solo arranca la ronda.
