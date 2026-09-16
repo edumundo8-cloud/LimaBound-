@@ -5,6 +5,7 @@ import {readFile} from "node:fs/promises";
 const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
 const room=await readFile(new URL("../app/api/room/route.ts",import.meta.url),"utf8");
 const voice=await readFile(new URL("../app/useVoiceChat.ts",import.meta.url),"utf8");
+const css=await readFile(new URL("../app/globals.css",import.meta.url),"utf8");
 
 test("el jugador 2 puede entrar por enlace o código",()=>{
  assert.match(page,/URLSearchParams\(location\.search\)\.get\("room"\)/);
@@ -26,4 +27,10 @@ test("el chat muestra menos reacciones rápidas",()=>{
  assert.match(page,/\["👋","😂","💀"\]/);
  assert.doesNotMatch(page,/"⚽","🇵🇪"/);
  assert.match(page,/game\.chat\.slice\(-12\)/);
+});
+
+test("el chat no se superpone a los controles en celular horizontal",()=>{
+ assert.match(css,/@media\(max-width:950px\) and \(max-height:650px\) and \(orientation:landscape\)/);
+ assert.match(css,/\.chat\{position:relative;right:auto;bottom:auto;width:min\(100%,720px\)/);
+ assert.match(css,/\.character-grid\{grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
 });
