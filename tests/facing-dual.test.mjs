@@ -10,6 +10,7 @@ import test from "node:test";
 
 const pageSource = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 const cssSource = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+const roster = await readFile(new URL("../lib/characters.ts", import.meta.url), "utf8");
 
 const contains = (needle) => assert.ok(pageSource.includes(needle), `falta en app/page.tsx: ${needle}`);
 
@@ -19,30 +20,35 @@ test("los personajes empiezan mirandose de frente", () => {
 });
 
 test("al caminar se voltean hacia donde van", () => {
-  contains("const posAntes=lastPos.current;if(posAntes[0]!==game.positions[0]||posAntes[1]!==game.positions[1]){setFacing(f=>[game.positions[0]>posAntes[0]?1:game.positions[0]<posAntes[0]?-1:f[0],game.positions[1]>posAntes[1]?1:game.positions[1]<posAntes[1]?-1:f[1]] as [number,number])");
+  contains("if(posAntes[0]!==game.positions[0]||posAntes[1]!==game.positions[1]){setFacing(f=>[game.positions[0]>posAntes[0]?1:game.positions[0]<posAntes[0]?-1:f[0],game.positions[1]>posAntes[1]?1:game.positions[1]<posAntes[1]?-1:f[1]] as [number,number])");
 });
 
 test("al disparar miran hacia el rival", () => {
-  contains("const shooter=(game.lastEvent.player??0) as 0|1;setFacing(f=>f.map((v,i)=>i===shooter?(shooter===0?1:-1):v) as [number,number])");
+  contains("setFacing(f=>f.map((v,i)=>i===shooter?(shooter===0?1:-1):v) as [number,number])");
 });
 
-test("al empezar una ronda vuelven a mirarse de frente", () => {
+test("al empezar una ronda vuelven a mirarse de frente y el DUAL se desarma", () => {
   contains("if(game.lastEvent.type===\"start\"){setHpHold(null);setHitCry(null);setFacing([1,-1]);setSelectedItem(\"none\")");
 });
 
-test("el volteo se aplica en el estilo del combatiente y en la sacudida", () => {
-  contains("[\"--face\" as string]:String(facing[i])");
-  assert.ok(cssSource.includes("transform:translateX(-50%) rotate(var(--tilt,0deg)) scaleX(var(--face,1))"), "el combatiente debe voltearse con --face");
+test("cada ilustracion declara hacia donde mira tal cual viene", () => {
+  // comprobado a ojo: las cinco primeras miran a la izquierda y el cocinero a la derecha
+  assert.equal((roster.match(/drawnFacing:-1/g) ?? []).length, 5);
+  assert.equal((roster.match(/drawnFacing:1/g) ?? []).length, 1);
+  assert.match(roster, /maestro-cevichero[^}]*drawnFacing:1/);
+});
+
+test("el volteo combina la direccion, la ilustracion y el lado del combatiente", () => {
+  contains("[\"--face\" as string]:String(facing[i]*characterById(characters[i]).drawnFacing*(i===0?1:-1))");
+  // el volteo va en una capa sin transicion, para que no se aplaste al girar
+  assert.ok(cssSource.includes(".fighter-art{scale:var(--face,1) 1}"), "el volteo debe ir en .fighter-art");
+  assert.ok(!cssSource.includes("rotate(var(--tilt,0deg)) scaleX"), "el contenedor ya no debe voltear");
   const sacudida = cssSource.match(/@keyframes hurt-shake\{.*?\}\}/s)[0];
-  assert.ok(sacudida.includes("scaleX(var(--face,1))"), "la sacudida no debe enderezar al golpeado");
+  assert.ok(!sacudida.includes("scaleX"), "la sacudida no debe voltear otra vez");
 });
 
 test("el DUAL se puede armar en cualquier momento antes de disparar", () => {
   contains("dualArmed=itemAvailable&&selectedItem===\"dual\"");
-  contains("className={`dual-item ${dualArmed?\"selected\":\"\"}`} disabled={!itemAvailable} onClick={()=>setSelectedItem(dualArmed?\"none\":\"dual\")}");
+  contains("disabled={!itemAvailable} onClick={()=>setSelectedItem(dualArmed?\"none\":\"dual\")}");
   assert.ok(!pageSource.includes("selectedItemTurn"), "el DUAL ya no debe depender del numero de turno");
-});
-
-test("el DUAL tambien se desarma al empezar la ronda", () => {
-  contains("if(game.lastEvent.type===\"start\"){setHpHold(null);setHitCry(null);setFacing([1,-1]);setSelectedItem(\"none\")");
 });

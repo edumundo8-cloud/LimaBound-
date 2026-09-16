@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- El volteo de los personajes tiene en cuenta hacia donde mira cada ilustracion y el lado del campo, y se aplica sin la transicion del contenedor para que no se aplasten al girar.
 - Los personajes se voltean hacia el lado al que caminan y vuelven a mirar al rival al disparar.
 - El DUAL SHOT puede armarse en cualquier momento antes de disparar (ya no exige el turno exacto) y se desarma al empezar la ronda.
 - El marcador de Miraflores deja de ser un dibujo de CSS: ahora usa una ilustración del faro (`public/game/faro-miraflores.png`), con tono nocturno y sombra de apoyo.
