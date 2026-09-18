@@ -126,3 +126,16 @@ test("el bonus por angulo alto se ve en los controles", () => {
   assert.match(ui, /angle>HIGH_ANGLE&&<em className="team-bonus"> \+15%<\/em>/);
   assert.match(css, /\.team-bonus\{/);
 });
+
+test("el monumento no lleva recuadro encima, solo su sombra en el suelo", () => {
+  assert.match(css, /\.team-wall\{position:absolute;z-index:1;pointer-events:none;background:none;border:0\}/);
+  assert.doesNotMatch(css, /\.team-wall\{[^}]*box-shadow:inset/);
+  assert.match(css, /\.team-wall:after\{[^}]*radial-gradient/, "queda solo la sombra difusa del pie");
+});
+
+test("el personaje da una zancada corta al caminar", () => {
+  assert.match(ui, /const walking=\(id:number\)=>game\.event\.kind==="move"&&game\.event\.player===id&&elapsed<430/);
+  assert.match(ui, /\$\{walking\(p\.id\)\?"walking":""\}/);
+  assert.match(css, /\.team-fighter\.walking img\{animation:team-step/);
+  assert.match(css, /@keyframes team-step\{/);
+});

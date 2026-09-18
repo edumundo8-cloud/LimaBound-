@@ -5,7 +5,10 @@ import {randomSceneIndex} from "./scenes.ts";
 export const TEAM_WIDTH = DUEL_WIDTH * 1.3;
 /** 15% sobre el duelo y un 10% extra: el campo ancho no debe sentirse lento. */
 export const TEAM_MOVE = DUEL_MOVE * 1.265;
-export const TEAM_STEP = 37.4;
+/** Pasos cortos: se camina en seis tramos por turno en vez de cuatro. */
+export const TEAM_STEP = 24;
+/** Velocidad de salida del proyectil: un 6% mas que el duelo, para cargar menos. */
+export const SHOT_SPEED = .165 * 1.06;
 export const TURN_TIME = 10_000;
 /** El vortice del 2v2 empuja algo menos que el del duelo, pero se nota. */
 export const TORNADO_PULL = .62;
@@ -118,7 +121,7 @@ export function blastDamage(s:TeamState,impact:Point,special:boolean,bonus=1):nu
 export function simulateTeamShot(s:TeamState,id:number,angle:number,power:number,direction:number,special=false):Shot{
  const p=s.players[id],a=angle*Math.PI/180,path:Point[]=[],tornado=teamTornado(s.turnNo,s.seed),wall=wallFor(s.scene);
  const wallTop=wall?teamGround(TEAM_WIDTH/2,s.craters,s.scene)-wall.height:0;
- let x=p.x,y=teamGround(x,s.craters,s.scene)-47,dx=Math.cos(a)*power*.165*(direction<0?-1:1),dy=-Math.sin(a)*power*.165,hitWall=false;
+ let x=p.x,y=teamGround(x,s.craters,s.scene)-47,dx=Math.cos(a)*power*SHOT_SPEED*(direction<0?-1:1),dy=-Math.sin(a)*power*SHOT_SPEED,hitWall=false;
  for(let i=0;i<420;i++){
   ({x,y,dx,dy}=stepProjectile(x,y,dx,dy,s.wind,tornado,TORNADO_PULL));path.push({x,y});
   if(wall&&x>=wall.x0&&x<=wall.x1&&y>=wallTop){hitWall=true;break}

@@ -87,6 +87,8 @@ export default function TeamGame(){
   :game.craters;
  const shownHP=(id:number)=>{if(!firing||!game.event.hpBefore)return game.players[id].hp;return Math.max(0,game.event.hpBefore[id]-(game.event.shots??[]).reduce((sum,shot)=>sum+(elapsed>=shot.delay+shot.path.length*1000/60?shot.damage[id]:0),0))};
  const wall=wallFor(game.scene);
+ // El paso dura lo mismo que el desplazamiento en CSS, asi que la zancada acompana al deslizamiento.
+ const walking=(id:number)=>game.event.kind==="move"&&game.event.player===id&&elapsed<430;
  const terrain=Array.from({length:Math.ceil(TEAM_WIDTH/4)+1},(_,i)=>{const x=Math.min(TEAM_WIDTH,i*4);return `${x},${teamGround(x,displayCraters,game.scene)}`}).join(" ");
  const aimGround=teamGround(mine.x,displayCraters,game.scene)-38,aimReach=54+power*.5,aim={x0:mine.x,y0:aimGround,x1:mine.x+Math.cos(angle*Math.PI/180)*aimReach*direction,y1:aimGround-Math.sin(angle*Math.PI/180)*aimReach};
  const remaining=Math.max(0,Math.ceil((game.turnStartedAt+TURN_TIME-clock)/1000)),next=nextPlayers(game),ended=game.phase==="ended"&&!firing,tornado=teamTornado(game.turnNo,game.seed);
@@ -128,7 +130,7 @@ export default function TeamGame(){
      {tornado&&<div className={`team-tornado ${tornado.spin<0?"counterclockwise":""}`} style={{left:`${tornado.x/TEAM_WIDTH*100}%`,width:`${tornado.radius*2/TEAM_WIDTH*100}%`}} aria-label="Tornado: desvía un poco los disparos"><u/><i/><i/><i/><i/><i/><i/><i/><i/><b/><b/><b/><span>TORNADO</span></div>}
      {wall&&<div className="team-wall" style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}} aria-label="Monumento: los disparos no lo atraviesan"/>}
      {(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}
-     {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}><span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
+     {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""} ${walking(p.id)?"walking":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}><span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
     </div>
     <nav className="team-turn-queue" aria-label="Próximos turnos"><b>SIGUEN</b>{next.map(id=><span key={id} style={colorStyle(id)}>● J{id+1}<small>Equipo {game.players[id].team===0?"A":"B"}</small></span>)}</nav>
    </section>

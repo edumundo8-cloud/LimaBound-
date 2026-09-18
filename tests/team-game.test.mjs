@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
-import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
 import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
@@ -179,6 +179,19 @@ test("el viento aguanta al menos tres turnos antes de cambiar de lado",()=>{
    }
   }
  }
+});
+
+test("pasos cortos y proyectil un 6% mas rapido",()=>{
+ assert.equal(SHOT_SPEED,.165*1.06);
+ assert.ok(TEAM_STEP<37.4,"el paso tenia que acortarse");
+ assert.ok(TEAM_MOVE/TEAM_STEP>=6,"el presupuesto debe alcanzar para al menos seis tramos");
+ // Gamarra no tiene monumento, asi que la bala vuela sin chocar con nada.
+ const s=newTeamGame(1000,fixed);s.scene=2;s.wind=0;s.players.forEach(p=>{p.x=120});
+ // Con la misma potencia el disparo llega mas lejos, asi que hace falta cargar menos.
+ const lento=(()=>{let x=120,y=teamGround(120,[],2)-47,dx=Math.cos(.8)*60*.165,dy=-Math.sin(.8)*60*.165;
+  for(let i=0;i<420;i++){x+=dx;y+=dy;dy+=.17;if(y>=teamGround(x,[],2))break}return x})();
+ const rapido=simulateTeamShot(s,0,.8*180/Math.PI,60,1).impact.x;
+ assert.ok(rapido>lento,`el tiro nuevo (${Math.round(rapido)}) debe pasar al viejo (${Math.round(lento)})`);
 });
 
 function sqliteDB(){
