@@ -125,9 +125,18 @@ export default function TeamGame(){
       {firing&&game.event.shots?.map((shot,i)=>{
        const frame=Math.floor((elapsed-shot.delay)*60/1000),point=shot.path[Math.min(frame,shot.path.length-1)],color=COLORS[game.event.player??0];
        if(frame<0||!point)return null;
-       if(frame<shot.path.length)return shot.special
-        ?<g key={i} className="team-orb-ss"><circle cx={point.x} cy={point.y} r="19" fill={color} opacity=".2"/><circle cx={point.x} cy={point.y} r="11" fill="#ffe9a1" opacity=".85"/><circle cx={point.x} cy={point.y} r="6" fill={color} stroke="#fff" strokeWidth="2"/></g>
-        :<circle key={i} cx={point.x} cy={point.y} r="7" fill={color} stroke="white" strokeWidth="2"/>;
+       if(frame<shot.path.length){
+        // Cola de cometa: la parte vieja se apaga y la reciente arde blanca.
+        const tail=shot.path.slice(Math.max(0,frame-(shot.special?22:16)),frame+1).map(p=>`${p.x},${p.y}`).join(" ");
+        const core=shot.path.slice(Math.max(0,frame-(shot.special?9:7)),frame+1).map(p=>`${p.x},${p.y}`).join(" ");
+        return <g key={i} className={shot.special?"team-orb-ss":"team-orb"}>
+         <polyline points={tail} fill="none" stroke={color} strokeWidth={shot.special?9:6} strokeLinecap="round" strokeLinejoin="round" opacity=".22"/>
+         <polyline points={core} fill="none" stroke={shot.special?"#ffe9a1":"#fff6bc"} strokeWidth={shot.special?4:2.6} strokeLinecap="round" strokeLinejoin="round" opacity=".7"/>
+         {shot.special&&<circle cx={point.x} cy={point.y} r="19" fill={color} opacity=".2"/>}
+         {shot.special&&<circle cx={point.x} cy={point.y} r="11" fill="#ffe9a1" opacity=".85"/>}
+         <circle cx={point.x} cy={point.y} r={shot.special?6:7} fill={shot.special?color:color} stroke="#fff" strokeWidth="2"/>
+        </g>;
+       }
        // El SS abre una onda triple y dorada; el disparo normal, un destello corto.
        const age=(frame-shot.path.length)/(shot.special?46:30),fade=Math.max(0,1-age);
        if(fade<=0)return null;
@@ -135,11 +144,18 @@ export default function TeamGame(){
        return <g key={i}><circle cx={shot.impact.x} cy={shot.impact.y} r={r} fill={shot.special?"#ffd76a":color} opacity={fade*(shot.special?.7:.55)}/><circle cx={shot.impact.x} cy={shot.impact.y} r={r*1.3} fill="none" stroke={shot.special?"#fff3c4":"#fff6bc"} strokeWidth={shot.special?7:3} opacity={fade}/>{shot.special&&<circle cx={shot.impact.x} cy={shot.impact.y} r={r*1.95} fill="none" stroke={color} strokeWidth="3" opacity={fade*.5}/>}</g>;
       })}
      </svg>
-     <div className={`team-wind ${game.wind<0?"left":"right"}`} aria-label={`Viento ${Math.abs(game.wind)} hacia ${game.wind<0?"la izquierda":"la derecha"}`}><b>VIENTO</b><i>{game.wind<0?"←":"→"}</i><em>{Math.abs(game.wind)}</em></div>
+     {/* Cronometro y viento comparten el centro de arriba: es donde miran todos. */}
+     <div className="team-hud">
+      <div className={`team-clock ${myTurn?"mine":""} ${playing&&!firing&&clock>=game.turnStartedAt&&remaining<=3?"urgent":""}`} role="timer" aria-label={`${remaining} segundos de turno`}>
+       <b>{firing?"···":ended?"—":clock<game.turnStartedAt?"···":remaining}</b>
+       <span>{myTurn?"TU TURNO":firing||ended?"":`J${game.turn+1}`}</span>
+      </div>
+      <div className={`team-wind ${game.wind<0?"left":"right"}`} aria-label={`Viento ${Math.abs(game.wind)} hacia ${game.wind<0?"la izquierda":"la derecha"}`}><b>VIENTO</b><i>{game.wind<0?"←":"→"}</i><em>{Math.abs(game.wind)}</em></div>
+     </div>
      {tornado&&<div className={`team-tornado ${tornado.spin<0?"counterclockwise":""}`} style={{left:`${tornado.x/TEAM_WIDTH*100}%`,width:`${tornado.radius*2/TEAM_WIDTH*100}%`}} aria-label="Tornado: desvía un poco los disparos"><u/><i/><i/><i/><i/><i/><i/><i/><i/><b/><b/><b/><span>TORNADO</span></div>}
      {wall&&<div className="team-wall" style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}} aria-label="Monumento: los disparos no lo atraviesan"/>}
      {(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}
-     {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""} ${walking(p.id)?"walking":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}><span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
+     {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""} ${walking(p.id)?"walking":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}>{game.turn===p.id&&shownHP(p.id)>0&&<u className="team-turn-flag" aria-hidden="true"/>}<span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
      {/* Marcador y orden de turnos en una sola columna: libera todo el alto para el mapa. */}
      <aside className="team-board" aria-label="Jugadores, vida y orden de turnos">
       <header><b>RONDA {game.round}</b><span>{scene.label}</span></header>

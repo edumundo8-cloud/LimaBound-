@@ -123,8 +123,9 @@ test("los tiros por encima de 70 grados pegan un 15% mas",()=>{
  assert.equal(plano,DAMAGE.basic);
  assert.equal(alto,Math.round(DAMAGE.basic*HIGH_ANGLE_BONUS));
  assert.ok(alto>plano,"el angulo alto tiene que pagar mejor");
- // El SS tambien cobra el bonus y ya pega un 20% mas que antes.
- assert.equal(DAMAGE.special,58);
+ // El SS cobra el bonus igual, aunque su golpe base bajo un punto.
+ assert.equal(DAMAGE.special,52);
+ assert.ok(DAMAGE.special>DAMAGE.basic*2,"el SS sigue siendo el golpe gordo");
  assert.equal(simulateTeamShot(s,0,HIGH_ANGLE+2,1,1,true).damage[1],Math.round(DAMAGE.special*HIGH_ANGLE_BONUS));
 });
 test("el tornado dura cuatro turnos seguidos, uno por jugador",()=>{
@@ -218,8 +219,8 @@ test("el terreno del 2v2 tiene colinas mas pronunciadas que el del duelo",()=>{
  assert.notEqual(teamRelief(200,1),teamRelief(200,2),"cada mapa lleva su propio relieve");
 });
 
-test("los bots fallan a proposito una de cada cinco veces",()=>{
- assert.equal(BOT_MISS,.2);
+test("los bots fallan a proposito casi un tercio de las veces",()=>{
+ assert.equal(BOT_MISS,.3);
  let desviados=0,tiros=0;
  for(let semilla=0;semilla<220;semilla++){
   const s=newTeamGame(1000,()=>(semilla*31%89)/89);
@@ -236,7 +237,7 @@ test("los bots fallan a proposito una de cada cinco veces",()=>{
   assert.equal(amigo,0,"fallar nunca puede convertirse en fuego amigo");
  }
  const proporcion=desviados/tiros;
- assert.ok(proporcion>.1&&proporcion<.32,`los bots desviaron el ${Math.round(proporcion*100)}% de ${tiros} tiros`);
+ assert.ok(proporcion>.18&&proporcion<.45,`los bots desviaron el ${Math.round(proporcion*100)}% de ${tiros} tiros`);
  // El azar depende de la ronda y del turno, asi que la sala y el cliente coinciden.
  const s=newTeamGame(1000,fixed);s.seed=4242;s.turnNo=5;
  assert.equal(botChance(s),botChance({...s}));

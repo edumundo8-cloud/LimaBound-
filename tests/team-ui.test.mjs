@@ -13,12 +13,17 @@ const css = await readFile(new URL("../app/team-game.css", import.meta.url), "ut
 const voice = await readFile(new URL("../app/useTeamVoice.ts", import.meta.url), "utf8");
 const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
-test("el viento se lee en el centro del mapa y ya no en la cabecera", () => {
+test("el reloj y el viento mandan en el centro de arriba del mapa", () => {
   assert.match(ui, /className=\{`team-wind \$\{game\.wind<0\?"left":"right"\}`\}/);
-  // El indicador vive dentro del escenario, despues del SVG del terreno.
-  assert.ok(ui.indexOf("team-wind") > ui.indexOf("className=\"team-terrain\""), "el viento va dentro del escenario");
+  // Los dos indicadores viven dentro del escenario, despues del SVG del terreno.
+  assert.ok(ui.indexOf("team-hud") > ui.indexOf("className=\"team-terrain\""), "el marcador va dentro del escenario");
   assert.doesNotMatch(ui, /Viento \{game\.wind<0/);
-  assert.match(css, /\.team-wind\{position:absolute;[^}]*left:50%;[^}]*transform:translateX\(-50%\)/);
+  assert.match(css, /\.team-hud\{position:absolute;[^}]*left:50%;[^}]*transform:translateX\(-50%\)/);
+  // La cuenta regresiva es el numero mas grande de la pantalla de juego.
+  assert.match(ui, /role="timer" aria-label=\{`\$\{remaining\} segundos de turno`\}/);
+  assert.match(css, /\.team-clock b\{font-size:clamp\(19px,3\.4vw,27px\)/);
+  assert.match(css, /\.team-clock\.mine\{/, "tu turno se pinta distinto");
+  assert.match(css, /\.team-clock\.urgent\{[^}]*animation:team-clock-beat/, "los ultimos segundos laten");
 });
 
 test("la mira es una guia punteada con punta de flecha, no una linea gruesa", () => {
@@ -28,8 +33,11 @@ test("la mira es una guia punteada con punta de flecha, no una linea gruesa", ()
   assert.match(ui, /aimReach=54\+power\*\.5/, "la mira crece con la potencia cargada");
 });
 
-test("el SS se dibuja distinto y abre una onda mas ancha que el disparo normal", () => {
-  assert.match(ui, /shot\.special\s*\n?\s*\?<g key=\{i\} className="team-orb-ss">/);
+test("el proyectil deja cola de cometa y el SS se dibuja distinto", () => {
+  assert.match(ui, /className=\{shot\.special\?"team-orb-ss":"team-orb"\}/);
+  assert.ok(ui.includes("const tail=shot.path.slice(Math.max(0,frame-(shot.special?22:16)),frame+1)"), "la cola son los ultimos puntos del vuelo");
+  assert.ok(ui.includes("const core=shot.path.slice(Math.max(0,frame-(shot.special?9:7)),frame+1)"), "y la parte reciente arde mas clara");
+  assert.match(ui, /<polyline points=\{tail\}[^>]*opacity="\.22"/);
   assert.ok(ui.includes("const r=shot.radius*(.4+age*1.1)"), "el radio del impacto sale de las reglas");
   assert.match(ui, /shot\.special&&<circle[^>]*r=\{r\*1\.95\}/, "el SS suma un tercer anillo");
   assert.match(css, /\.team-orb-ss\{filter:drop-shadow/);
@@ -104,8 +112,15 @@ test("el juego ofrece pantalla completa donde el navegador la soporta", () => {
   assert.match(ui, /setCanFullscreen\(!!document\.fullscreenEnabled&&!!shell\.current\?\.requestFullscreen\)/);
   assert.match(ui, /className="team-fullscreen"/);
   assert.match(ui, /document\.addEventListener\("fullscreenchange",sync\)/);
-  assert.match(css, /\.team-app:fullscreen\{/);
-  assert.match(css, /\.team-app\.is-fullscreen \.team-stage\{height:clamp\(/);
+  assert.match(css, /\.team-app:fullscreen\{padding:4px\}/, "en pantalla completa el borde es minimo");
+  assert.match(css, /\.team-app\.is-fullscreen \.team-field[^{]*\{max-width:none\}/, "y nada limita el ancho");
+  assert.doesNotMatch(css, /\.team-app\.is-fullscreen[^{]*\{[^}]*max-width:min\(1600px/);
+});
+
+test("la flecha de turno apunta a quien juega", () => {
+  assert.match(ui, /\{game\.turn===p\.id&&shownHP\(p\.id\)>0&&<u className="team-turn-flag"/);
+  assert.match(css, /\.team-turn-flag\{position:absolute[^}]*border-top:9px solid var\(--player-color\)/);
+  assert.match(css, /@keyframes team-turn-flag\{/);
 });
 
 test("el fondo sopla hacia el mismo lado que el viento", () => {

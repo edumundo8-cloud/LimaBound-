@@ -17,8 +17,8 @@ export const TORNADO_TURNS = 4;
 export const TORNADO_PERIOD = 8;
 /** Un tiro casi vertical es mas dificil de calcular y paga mejor. */
 export const HIGH_ANGLE = 70, HIGH_ANGLE_BONUS = 1.15;
-/** Uno de cada cinco tiros de un bot sale desviado a proposito. */
-export const BOT_MISS = .2;
+/** Casi un tercio de los tiros de un bot sale desviado a proposito. */
+export const BOT_MISS = .3;
 /** El viento aguanta al menos tres turnos antes de cambiar de lado. */
 export const WIND_HOLD = 3, WIND_EVERY = 4;
 /** Un color por equipo: A azul, B rojo. Los dos companeros comparten el mismo. */
@@ -28,7 +28,7 @@ export const teamColor = (team:0|1) => TEAM_COLORS[team];
 /** El SS abre un crater mucho mas ancho y alcanza a todo el que este dentro. */
 export const BLAST = {basic:64, special:96};
 export const CRATER = {basic:15, special:32};
-export const DAMAGE = {basic:25, special:58};
+export const DAMAGE = {basic:25, special:52};
 /**
  * El monumento del centro (Plaza San Martin, Faro de Miraflores) es solido: los
  * proyectiles revientan contra el y nadie puede cruzarlo caminando. Las medidas
@@ -211,7 +211,9 @@ export function chooseBotAction(s:TeamState,miss=BOT_MISS):GameAction{
  if(!enemies.length)return {type:"timeout"};
  type Aim={score:number;angle:number;power:number;direction:number;special:boolean};
  let clean:Aim|null=null,dirty:Aim|null=null;
- for(const direction of [-1,1])for(let angle=22;angle<=76;angle+=6)for(let power=24;power<=100;power+=4){
+ // La reja de busqueda es gruesa a proposito: un bot que prueba cada grado
+ // acierta demasiado y no hay forma humana de ganarle.
+ for(const direction of [-1,1])for(let angle=22;angle<=76;angle+=7)for(let power=24;power<=100;power+=6){
   const shot=simulateTeamShot(s,p.id,angle,power,direction);
   const nearest=Math.min(...enemies.map(t=>Math.abs(t.x-shot.impact.x)));
   // La trayectoria no cambia con el SS: solo el radio, asi que se reutiliza el mismo vuelo.
@@ -230,7 +232,7 @@ export function chooseBotAction(s:TeamState,miss=BOT_MISS):GameAction{
  // Falla a proposito: abre el angulo hacia un lado que siga sin tocar al aliado
  // y se guarda el SS, que seria un desperdicio tirarlo a la basura.
  for(const swing of roll<miss/2?[1,-1]:[-1,1]){
-  const angle=clamp(pick.angle+swing*(7+Math.floor(roll*40)%6),18,78);
+  const angle=clamp(pick.angle+swing*(9+Math.floor(roll*40)%8),18,78);
   const shot=simulateTeamShot(s,p.id,angle,pick.power,pick.direction);
   if(shot.damage.every((hit,i)=>s.players[i].team!==p.team||hit===0))return shoot({angle,power:pick.power,direction:pick.direction,special:false});
  }
