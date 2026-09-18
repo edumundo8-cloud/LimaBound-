@@ -16,13 +16,21 @@
  * campo quedandose todo el espacio que sobra. La sala de espera si puede crecer.
  */
 .team-app.is-lobby{min-height:100dvh}
-.team-app.is-playing{height:100dvh;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.team-app.is-playing{height:100dvh;overflow:hidden;display:flex;flex-direction:column;gap:4px;padding:5px max(5px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left))}
+/* Nada de barras negras a los lados: en partida el mapa ocupa todo el ancho. */
+.team-app.is-playing .team-field{max-width:none;border-width:1px;border-radius:12px}
+.team-app.is-playing .team-header{margin-bottom:0}
+.team-app.is-playing .team-social{gap:6px}
+.team-app.is-playing .team-social button{min-height:32px;padding:5px 11px}
 /* Los margenes automaticos anulan el estirado del flex: hay que pedir el ancho. */
 .team-app.is-playing>*{flex:0 0 auto;width:100%}
 .team-app.is-playing .team-chat,.team-app.is-playing .team-lobby{width:auto}
-/* En monitor la carga comparte fila con el resto y el mapa se queda con el alto. */
-.team-app.is-playing .team-controls{gap:8px 14px;padding:9px}
-@media(min-width:1000px){.team-app.is-playing .team-charge{grid-column:auto}}
+/*
+ * Con la barra de carga ocupando su propia fila, el resto entra en una sola:
+ * columnas mas anchas para que el boton de disparo no baje de linea.
+ */
+.team-app.is-playing .team-controls{gap:7px 14px;padding:8px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.team-app.is-playing .team-items{grid-column:auto}
 .team-app.is-playing .team-field{flex:1 1 auto;min-height:90px;display:flex;margin-top:0;margin-bottom:0}
 .team-app.is-playing .team-stage{flex:1;height:auto;min-height:0}
 .team-app.is-playing .team-controls,.team-app.is-playing .team-social,.team-app.is-playing .team-result{margin-top:0;margin-bottom:0}
@@ -203,6 +211,8 @@
 .team-direction button{min-width:42px;padding:6px}
 .team-app .team-fire{flex:1 1 115px;background:linear-gradient(#ffd36a,#ffab55);color:#402610;min-height:50px}
 .team-fire small,.team-items small{display:block;font-size:10px;font-weight:normal}
+.team-items button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15}
+.team-icon{width:clamp(16px,2.4vw,20px);height:clamp(16px,2.4vw,20px);display:block}
 .team-movement{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px}
 .team-movement span{min-width:96px}
 .team-movement span b{display:block}
@@ -289,9 +299,10 @@
  .team-stage{height:clamp(132px,38vh,220px)}
  .team-arena-heading{margin:5px auto 4px}
  .team-turn-queue{min-height:32px;padding:3px 9px}
- .team-controls{margin:6px auto;padding:6px;gap:5px 10px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+ .team-controls{margin:6px auto;padding:6px;gap:5px 10px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+ /* Acostado el alto manda: la barra de carga vuelve a compartir fila. */
  .team-app.is-playing .team-charge,.team-app.is-playing .team-items{grid-column:auto}
- .team-app.is-playing .team-controls{padding:6px;gap:5px 10px}
+ .team-app.is-playing .team-controls{padding:6px;gap:5px 10px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
  .team-app button{min-height:34px}
  .team-app .team-fire{min-height:38px}
  .team-social button{min-height:30px;padding:4px 9px}

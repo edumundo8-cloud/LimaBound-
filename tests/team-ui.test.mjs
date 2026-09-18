@@ -165,3 +165,23 @@ test("espacio y flechas no mueven la pagina, y el angulo se ajusta esperando tur
   assert.match(ui, /className=\{`team-aim-guide \$\{myTurn\?"":"waiting"\}`\}/);
   assert.match(css, /\.team-aim-guide\.waiting\{opacity:/);
 });
+
+test("cada item lleva su dibujo", () => {
+  assert.match(ui, /const IconSS=\(\)=><svg className="team-icon"/);
+  assert.match(ui, /const IconDual=\(\)=><svg className="team-icon"/);
+  assert.match(ui, /const IconHeal=\(\)=><svg className="team-icon"/);
+  assert.match(ui, /fill="#ff4d5e"/, "la cura es una cruz roja");
+  assert.match(ui, /><IconSS\/>SS /);
+  assert.match(ui, /><IconDual\/>DUAL SHOT /);
+  assert.match(ui, /><IconHeal\/>CURA /);
+  assert.match(css, /\.team-icon\{width:clamp/);
+});
+
+test("el mapa no deja margenes muertos y la barra de carga vuelve a ser larga", () => {
+  assert.match(css, /\.team-app\.is-playing \.team-field\{max-width:none/, "sin barras negras a los lados");
+  assert.match(css, /\.team-app\.is-playing\{[^}]*gap:4px;padding:5px/);
+  // La carga ocupa la fila entera salvo en horizontal, donde el alto es el problema.
+  assert.match(css, /\.team-charge\{grid-column:1\/-1\}/);
+  const suelta = css.slice(0, css.indexOf("@media"));
+  assert.doesNotMatch(suelta, /\.team-app\.is-playing \.team-charge\{grid-column:auto\}/);
+});

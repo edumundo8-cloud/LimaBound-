@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
-import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,teamRelief,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,BOT_MISS,botChance,teamRelief,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
 import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
@@ -216,6 +216,31 @@ test("el terreno del 2v2 tiene colinas mas pronunciadas que el del duelo",()=>{
  // El hueco de San Miguel sigue sin suelo.
  assert.equal(teamGround(TEAM_WIDTH/2,[],4),440);
  assert.notEqual(teamRelief(200,1),teamRelief(200,2),"cada mapa lleva su propio relieve");
+});
+
+test("los bots fallan a proposito una de cada cinco veces",()=>{
+ assert.equal(BOT_MISS,.2);
+ let desviados=0,tiros=0;
+ for(let semilla=0;semilla<220;semilla++){
+  const s=newTeamGame(1000,()=>(semilla*31%89)/89);
+  s.seed=semilla*7919;s.turnNo=1+semilla%9;s.wind=semilla%11-5;
+  s.players.forEach((p,i)=>{p.bot=true;p.x=95+i*235+semilla%40});
+  const perfecto=chooseBotAction(s,0),real=chooseBotAction(s);
+  if(perfecto.type!=="fire")continue;
+  tiros++;
+  if(real.angle===perfecto.angle&&real.power===perfecto.power&&real.direction===perfecto.direction)continue;
+  desviados++;
+  assert.equal(real.special,false,"un tiro que va a fallar no gasta el SS");
+  const shot=simulateTeamShot(s,s.turn,real.angle,real.power,real.direction);
+  const amigo=shot.damage.reduce((suma,golpe,i)=>suma+(s.players[i].team===s.players[s.turn].team?golpe:0),0);
+  assert.equal(amigo,0,"fallar nunca puede convertirse en fuego amigo");
+ }
+ const proporcion=desviados/tiros;
+ assert.ok(proporcion>.1&&proporcion<.32,`los bots desviaron el ${Math.round(proporcion*100)}% de ${tiros} tiros`);
+ // El azar depende de la ronda y del turno, asi que la sala y el cliente coinciden.
+ const s=newTeamGame(1000,fixed);s.seed=4242;s.turnNo=5;
+ assert.equal(botChance(s),botChance({...s}));
+ assert.notEqual(botChance(s),botChance({...s,turnNo:6}));
 });
 
 function sqliteDB(){

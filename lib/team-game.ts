@@ -17,6 +17,8 @@ export const TORNADO_TURNS = 4;
 export const TORNADO_PERIOD = 8;
 /** Un tiro casi vertical es mas dificil de calcular y paga mejor. */
 export const HIGH_ANGLE = 70, HIGH_ANGLE_BONUS = 1.15;
+/** Uno de cada cinco tiros de un bot sale desviado a proposito. */
+export const BOT_MISS = .2;
 /** El viento aguanta al menos tres turnos antes de cambiar de lado. */
 export const WIND_HOLD = 3, WIND_EVERY = 4;
 /** Un color por equipo: A azul, B rojo. Los dos companeros comparten el mismo. */
@@ -192,8 +194,18 @@ export function applyTeamAction(input:TeamState,id:number,action:GameAction,now=
  return s;
 }
 
+/**
+ * Azar reproducible para los bots: depende de la ronda y del turno, de modo que
+ * la sala y cualquier copia del estado deciden exactamente el mismo fallo.
+ */
+export function botChance(s:TeamState):number{
+ let value=(s.seed^Math.imul(s.turnNo+1,0x9e3779b9))>>>0;
+ value=Math.imul(value^(value>>>15),0x85ebca6b)>>>0;
+ return ((value^(value>>>13))>>>0)/4294967296;
+}
+
 /** Bots never fire on their own team: an aim that touches an ally is only a last resort. */
-export function chooseBotAction(s:TeamState):GameAction{
+export function chooseBotAction(s:TeamState,miss=BOT_MISS):GameAction{
  const p=s.players[s.turn];if(p.hp<=100&&!p.itemUsed)return {type:"heal"};
  const enemies=s.players.filter(t=>t.team!==p.team&&t.hp>0);
  if(!enemies.length)return {type:"timeout"};
@@ -212,7 +224,17 @@ export function chooseBotAction(s:TeamState):GameAction{
   }
  }
  const pick=clean??dirty??{angle:48,power:60,direction:1,special:false};
- return {type:"fire",angle:pick.angle,power:pick.power,direction:pick.direction,special:pick.special};
+ const shoot=(aim:{angle:number;power:number;direction:number;special:boolean})=>({type:"fire",angle:aim.angle,power:aim.power,direction:aim.direction,special:aim.special});
+ const roll=botChance(s);
+ if(!clean||roll>=miss)return shoot(pick);
+ // Falla a proposito: abre el angulo hacia un lado que siga sin tocar al aliado
+ // y se guarda el SS, que seria un desperdicio tirarlo a la basura.
+ for(const swing of roll<miss/2?[1,-1]:[-1,1]){
+  const angle=clamp(pick.angle+swing*(7+Math.floor(roll*40)%6),18,78);
+  const shot=simulateTeamShot(s,p.id,angle,pick.power,pick.direction);
+  if(shot.damage.every((hit,i)=>s.players[i].team!==p.team||hit===0))return shoot({angle,power:pick.power,direction:pick.direction,special:false});
+ }
+ return shoot(pick);
 }
 
 export function tickTeamGame(s:TeamState,now=Date.now()):TeamState{
