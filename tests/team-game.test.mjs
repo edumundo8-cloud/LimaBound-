@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
-import {TEAM_WIDTH,TEAM_MOVE,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,COLORS,TEAM_COLORS,BLAST,CRATER,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
 
-test("2v2: campo +30%, movimiento +15%, cuatro colores y posiciones seguras",()=>{
- assert.equal(TEAM_WIDTH,836*1.3);assert.equal(TEAM_MOVE,114.4*1.15);
+test("2v2: campo +30%, movimiento +26.5%, un color por equipo y posiciones seguras",()=>{
+ assert.equal(TEAM_WIDTH,836*1.3);assert.equal(TEAM_MOVE,114.4*1.265);
+ assert.deepEqual([...COLORS],[TEAM_COLORS[0],TEAM_COLORS[1],TEAM_COLORS[0],TEAM_COLORS[1]]);assert.notEqual(TEAM_COLORS[0],TEAM_COLORS[1]);
  for(let n=0;n<100;n++){
   const xs=spawnPositions();assert.equal(new Set(xs).size,4);
   for(const x of xs){assert.ok(x>=42&&x<=TEAM_WIDTH-42);assert.ok(x<=429||x>=657)}
@@ -57,6 +59,61 @@ test("una serie completa con cuatro bots termina y reinicia en otro mapa",()=>{
  const next=applyTeamAction(s,0,{type:"rematch"},s.event.at+s.event.duration+1);assert.notEqual(next.scene,s.scene);
 });
 
+test("el personaje encara hacia donde lo empujas aunque algo lo frene",()=>{
+ const s=newTeamGame(1000,fixed);s.scene=1;s.players[0].x=300;s.players[0].facing=1;s.players[2].x=300+40;
+ const blocked=applyTeamAction(s,0,{type:"move",delta:TEAM_STEP},1001);
+ assert.equal(blocked.players[0].facing,1);assert.equal(blocked.players[0].x,300,"un aliado pegado no deja avanzar");
+ const back=applyTeamAction(blocked,0,{type:"move",delta:-TEAM_STEP},1002);
+ assert.equal(back.players[0].facing,-1);assert.ok(back.players[0].x<300);
+ const again=applyTeamAction(back,0,{type:"move",delta:TEAM_STEP},1003);assert.equal(again.players[0].facing,1);
+});
+test("SS y Dual Shot solo una vez por partida; el crater y el radio del SS son mayores",()=>{
+ assert.ok(BLAST.special>BLAST.basic);assert.ok(CRATER.special>CRATER.basic);
+ let s=newTeamGame(1000,fixed);s.scene=1;s.wind=0;s.players.forEach(p=>{p.x=200+p.id*260;p.bot=false});
+ s=applyTeamAction(s,0,{type:"fire",angle:48,power:70,direction:1,special:true},1001);
+ assert.equal(s.players[0].specialUsed,true);assert.equal(s.event.special,true);
+ assert.ok(s.craters.at(-1).r===CRATER.special);
+ s.turn=0;s.turnStartedAt=2000;s.phase="playing";
+ assert.throws(()=>applyTeamAction(s,0,{type:"fire",angle:48,power:70,direction:1,special:true},2001),/SS/);
+ s=applyTeamAction(s,0,{type:"fire",angle:48,power:70,direction:1,dual:true},2001);
+ assert.equal(s.players[0].dualUsed,true);assert.equal(s.event.shots.length,2);
+ s.turn=0;s.turnStartedAt=3000;s.phase="playing";
+ assert.throws(()=>applyTeamAction(s,0,{type:"fire",angle:48,power:70,direction:1,dual:true},3001),/Dual/);
+ // Una ronda nueva de la misma serie los mantiene gastados; una serie nueva los devuelve.
+ s.phase="ended";s.winner=0;s.wins=[1,0];s.event.duration=0;
+ const round=applyTeamAction(s,0,{type:"rematch"},5000);
+ assert.equal(round.players[0].specialUsed,true);assert.equal(round.players[0].dualUsed,true);
+ s.wins=[2,0];const match=applyTeamAction(s,0,{type:"rematch"},5000);
+ assert.equal(match.players[0].specialUsed,false);assert.equal(match.players[0].dualUsed,false);
+});
+test("el SS alcanza a quien el disparo normal no toca",()=>{
+ const s=newTeamGame(1000,fixed);s.scene=1;s.wind=0;s.players.forEach(p=>{p.x=300});s.players[1].x=300+(BLAST.basic+BLAST.special)/2;
+ assert.equal(simulateTeamShot(s,0,78,1,1).damage[1],0);
+ assert.ok(simulateTeamShot(s,0,78,1,1,true).damage[1]>0);
+});
+test("los bots nunca disparan contra su propio equipo",()=>{
+ for(let seed=0;seed<25;seed++){
+  const s=newTeamGame(1000,()=>(seed*37%100)/100);s.wind=seed%9-4;s.players.forEach(p=>{p.bot=true});
+  for(let turn=0;turn<8;turn++){
+   const bot=s.players[s.turn],action=chooseBotAction(s);
+   if(action.type!=="fire")break;
+   const shot=simulateTeamShot(s,s.turn,action.angle,action.power,action.direction,action.special);
+   const friendly=shot.damage.reduce((sum,hit,i)=>sum+(s.players[i].team===bot.team?hit:0),0);
+   const anywhere=[-1,1].some(direction=>[22,28,34,40,46,52,58,64,70,76].some(angle=>[24,40,60,80,100].some(power=>
+    simulateTeamShot(s,s.turn,angle,power,direction).damage.every((hit,i)=>s.players[i].team!==bot.team||hit===0))));
+   if(anywhere)assert.equal(friendly,0,`el bot J${s.turn+1} se disparo a su equipo teniendo una linea limpia`);
+   s.turn=(s.turn+1)%4;
+  }
+ }
+});
+test("el tornado del 2v2 desvia menos que el del duelo",()=>{
+ const vortex={x:418,radius:48,spin:1,cycle:1};
+ const fly=pull=>{let p={x:320,y:120,dx:8,dy:-1};for(let i=0;i<50;i++)p=stepProjectile(p.x,p.y,p.dx,p.dy,0,vortex,pull);return p};
+ const straight=fly(0),duel=fly(1),team=fly(.45);
+ assert.ok(Math.abs(team.x-straight.x)<Math.abs(duel.x-straight.x)/2,"el 2v2 debe desviar menos de la mitad");
+ assert.ok(Math.abs(team.x-straight.x)>1,"pero el tornado tiene que seguir notandose");
+});
+
 function sqliteDB(){
  const sqlite=new DatabaseSync(":memory:");
  sqlite.exec("CREATE TABLE team_rooms(code TEXT PRIMARY KEY,tokens TEXT NOT NULL,state TEXT NOT NULL,revision INTEGER NOT NULL,updated_at INTEGER NOT NULL)");
@@ -85,4 +142,27 @@ test("sala: bots completan puestos vacíos, se validan turnos y chat/voz no pisa
  const state=(await request(db,0,"poll")).state;assert.equal(state.event.kind,"fire");assert.equal(state.chat.at(-1).text,"Hola");assert.equal(state.voice.at(-1).to,0);
  assert.equal((await request(db,0,"fire",{round:1,turnNo:1,angle:48,power:60})).status,409);
  assert.equal((await request(db,4,"poll")).status,403);db.sqlite.close();
+});
+test("sala: la voz llega al puesto correcto en los dos sentidos y rechaza destinos vacios",async()=>{
+ const db=sqliteDB();await request(db,0,"create");await request(db,1,"join");await request(db,0,"start");
+ const mine=state=>state.voice.filter(v=>v.to===1),theirs=state=>state.voice.filter(v=>v.to===0);
+ assert.equal((await request(db,0,"voice",{to:2,kind:"ready"})).status,400,"no se puede llamar a un puesto sin dueno");
+ assert.equal((await request(db,0,"voice",{to:0,kind:"ready"})).status,400,"ni a uno mismo");
+ assert.equal((await request(db,0,"voice",{to:1,kind:"saludo"})).status,400,"ni inventar tipos de senal");
+ // Apreton de manos completo: J1 avisa, J2 responde, se cruzan oferta, respuesta y candidatos.
+ await request(db,0,"voice",{to:1,kind:"ready"});
+ const seen=await request(db,1,"poll");
+ assert.equal(mine(seen.state).at(-1).kind,"ready");assert.equal(mine(seen.state).at(-1).from,0);
+ await request(db,1,"voice",{to:0,kind:"ready"});
+ await request(db,0,"voice",{to:1,kind:"offer",payload:JSON.stringify({type:"offer",sdp:"v=0"})});
+ await request(db,1,"voice",{to:0,kind:"answer",payload:JSON.stringify({type:"answer",sdp:"v=0"})});
+ await request(db,0,"voice",{to:1,kind:"candidate",payload:JSON.stringify({candidate:"candidate:1"})});
+ const final=(await request(db,1,"poll")).state;
+ assert.deepEqual(mine(final).map(v=>v.kind),["ready","offer","candidate"]);
+ assert.deepEqual(theirs(final).map(v=>v.kind),["ready","answer"]);
+ assert.equal(JSON.parse(mine(final).at(-1).payload).candidate,"candidate:1");
+ assert.equal(new Set(final.voice.map(v=>v.id)).size,final.voice.length,"cada senal necesita un id unico");
+ assert.equal((await request(db,0,"voice",{to:1,kind:"offer",payload:"x".repeat(18001)})).status,400);
+ assert.equal((await request(db,4,"voice",{to:0,kind:"ready"})).status,403,"un extrano no puede senalizar");
+ db.sqlite.close();
 });

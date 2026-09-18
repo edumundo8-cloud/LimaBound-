@@ -10,6 +10,7 @@ export function useTeamVoice(room:string,role:number,occupied:boolean[],signals:
  useEffect(()=>{sendRef.current=send;roleRef.current=role;occupiedRef.current=occupied},[send,role,occupied]);
  const closePeer=useCallback((id:number)=>{const peer=peers.current.get(id);if(!peer)return;peer.pc.close();peer.audio.pause();peer.audio.srcObject=null;peers.current.delete(id)},[]);
  const cleanup=useCallback(()=>{generation.current++;active.current=false;stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;for(const id of peers.current.keys())closePeer(id)},[closePeer]);
+ const stale=useCallback((id:number)=>{const peer=peers.current.get(id);if(!peer)return false;const state=peer.pc.connectionState;return state==="failed"||state==="disconnected"||state==="closed"},[]);
  const count=useCallback(()=>setConnected([...peers.current.values()].filter(p=>p.pc.connectionState==="connected").length),[]);
  const transmit=useCallback(async(to:number,kind:TeamSignal["kind"],payload?:string)=>{try{await sendRef.current(to,kind,payload)}catch{if(active.current)setError("La voz perdió conexión. Sal y vuelve a activarla.")}},[]);
  const ensure=useCallback((id:number)=>{
@@ -19,10 +20,12 @@ export function useTeamVoice(room:string,role:number,occupied:boolean[],signals:
   stream.current?.getTracks().forEach(track=>pc.addTrack(track,stream.current!));
   pc.onicecandidate=e=>{if(e.candidate&&active.current)void transmit(id,"candidate",JSON.stringify(e.candidate.toJSON()))};
   pc.ontrack=e=>{audio.srcObject=e.streams[0]??new MediaStream([e.track]);void audio.play().catch(()=>setError("Pulsa Escuchar voz para oír a tus amigos."))};
-  pc.onconnectionstatechange=()=>{if(active.current){count();if(pc.connectionState==="failed")setError("No se pudo enlazar la voz con un jugador. Reintenta la voz.")}};
+  pc.onconnectionstatechange=()=>{if(!active.current)return;count();
+  if(pc.connectionState==="connected")setError("");
+  else if(pc.connectionState==="failed")setError("No se pudo enlazar la voz con un jugador. Reintentando…");};
   return peer;
  },[count,transmit]);
- const offer=useCallback(async(id:number)=>{if(!active.current||roleRef.current>=id)return;const peer=ensure(id);if(peer.offering||peer.pc.signalingState!=="stable"||peer.pc.connectionState==="connected")return;peer.offering=true;try{await peer.pc.setLocalDescription(await peer.pc.createOffer());await transmit(id,"offer",JSON.stringify(peer.pc.localDescription))}finally{peer.offering=false}},[ensure,transmit]);
+ const offer=useCallback(async(id:number)=>{if(!active.current||roleRef.current>=id)return;if(stale(id))closePeer(id);const peer=ensure(id);if(peer.offering||peer.pc.signalingState!=="stable"||peer.pc.connectionState==="connected")return;peer.offering=true;try{await peer.pc.setLocalDescription(await peer.pc.createOffer());await transmit(id,"offer",JSON.stringify(peer.pc.localDescription))}finally{peer.offering=false}},[closePeer,ensure,stale,transmit]);
  const flush=async(peer:Peer)=>{for(const candidate of peer.ice.splice(0))await peer.pc.addIceCandidate(candidate)};
  const leave=useCallback(()=>{if(active.current)occupiedRef.current.forEach((yes,id)=>{if(yes&&id!==roleRef.current)void transmit(id,"leave")});cleanup();setEnabled(false);setMuted(false);setConnected(0);setError("")},[cleanup,transmit]);
  const enable=useCallback(async()=>{
@@ -41,8 +44,9 @@ export function useTeamVoice(room:string,role:number,occupied:boolean[],signals:
     if(!active.current||signal.at<started.current-45000)return;
     if(signal.kind==="leave"){closePeer(signal.from);count();return}
     if(signal.kind==="ready"){
+     if(stale(signal.from))closePeer(signal.from);
      if(roleRef.current<signal.from)await offer(signal.from);
-     else if(!peers.current.has(signal.from))await transmit(signal.from,"ready");
+     else if(peers.current.get(signal.from)?.pc.connectionState!=="connected")await transmit(signal.from,"ready");
      return;
     }
     if(!signal.payload)return;const peer=ensure(signal.from);
@@ -56,8 +60,15 @@ export function useTeamVoice(room:string,role:number,occupied:boolean[],signals:
    }).catch(()=>{if(active.current)setError("No se pudo conectar la voz. Sal y actívala de nuevo.")});
   }
   if(seen.current.size>400)seen.current=new Set(signals.map(s=>s.id));
- },[signals,role,offer,ensure,closePeer,count,transmit]);
- useEffect(()=>{if(!enabled)return;const timer=setInterval(()=>{for(let id=0;id<4;id++)if(occupiedRef.current[id]&&id!==roleRef.current&&peers.current.get(id)?.pc.connectionState!=="connected")void transmit(id,"ready")},8000);return()=>clearInterval(timer)},[enabled,transmit]);
+ },[signals,role,offer,ensure,closePeer,count,stale,transmit]);
+ useEffect(()=>{if(!enabled)return;const timer=setInterval(()=>{
+  for(let id=0;id<4;id++){
+   if(!occupiedRef.current[id]||id===roleRef.current)continue;
+   if(peers.current.get(id)?.pc.connectionState==="connected")continue;
+   if(stale(id))closePeer(id);
+   void transmit(id,"ready");
+  }
+ },8000);return()=>clearInterval(timer)},[enabled,closePeer,stale,transmit]);
  useEffect(()=>()=>cleanup(),[room,cleanup]);
  const listen=()=>{for(const peer of peers.current.values())void peer.audio.play().then(()=>setError("")).catch(()=>setError("El navegador sigue bloqueando el audio."))};
  return {enabled,muted,connected,error,toggle,leave,listen,label:!enabled?"Activar voz":muted?"Micrófono silenciado":connected?`Voz · ${connected} conectado${connected===1?"":"s"}`:"Esperando voz de amigos"};

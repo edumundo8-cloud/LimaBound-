@@ -3,13 +3,23 @@ import {CHARACTER_ROSTER, isCharacterId, type CharacterId} from "./characters.ts
 import {randomSceneIndex} from "./scenes.ts";
 
 export const TEAM_WIDTH = DUEL_WIDTH * 1.3;
-export const TEAM_MOVE = DUEL_MOVE * 1.15;
+/** 15% sobre el duelo y un 10% extra: el campo ancho no debe sentirse lento. */
+export const TEAM_MOVE = DUEL_MOVE * 1.265;
 export const TEAM_STEP = 37.4;
 export const TURN_TIME = 10_000;
-export const COLORS = ["#53e4ff", "#ff729f", "#ffd05c", "#be94ff"] as const;
-export type Player = {id:number; team:0|1; character:CharacterId; bot:boolean; x:number; hp:number; moved:number; turns:number; specialAt:number; itemUsed:boolean; facing:1|-1};
+/** El vortice del 2v2 empuja con menos de la mitad de la fuerza del duelo. */
+export const TORNADO_PULL = .45;
+/** Un color por equipo: A azul, B rojo. Los dos companeros comparten el mismo. */
+export const TEAM_COLORS = ["#3da5ff", "#ff4d61"] as const;
+export const COLORS = [TEAM_COLORS[0], TEAM_COLORS[1], TEAM_COLORS[0], TEAM_COLORS[1]] as const;
+export const teamColor = (team:0|1) => TEAM_COLORS[team];
+/** El SS abre un crater mucho mas ancho y alcanza a todo el que este dentro. */
+export const BLAST = {basic:64, special:96};
+export const CRATER = {basic:15, special:32};
+export const DAMAGE = {basic:25, special:48};
+export type Player = {id:number; team:0|1; character:CharacterId; bot:boolean; x:number; hp:number; moved:number; turns:number; specialUsed:boolean; dualUsed:boolean; itemUsed:boolean; facing:1|-1};
 export type Point = {x:number;y:number};
-export type Shot = {path:Point[]; impact:Point; delay:number; damage:number[]};
+export type Shot = {path:Point[]; impact:Point; delay:number; damage:number[]; radius:number; special:boolean};
 export type TeamSignal = {id:string;from:number;to:number;kind:"ready"|"offer"|"answer"|"candidate"|"leave";payload?:string;at:number};
 export type TeamState = {
  version:2; players:Player[]; phase:"lobby"|"playing"|"ended"; scene:number; round:number; wins:[number,number];
@@ -20,6 +30,7 @@ export type TeamState = {
 export type GameAction = {type:string; delta?:number; angle?:number;power?:number;direction?:number;special?:boolean;dual?:boolean;character?:unknown;text?:string};
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 export const teamGround=(x:number,craters:Crater[]=[],scene=0)=>groundAt(x/1.3,craters.map(c=>({x:c.x/1.3,r:c.r/1.3})),scene);
+export const teamTornado=(turnNo:number,seed:number)=>{const t=tornadoForTurn(turnNo,seed);return t?{...t,x:t.x*1.3,radius:t.radius*1.3}:null};
 
 /** Four separated random positions on playable terrain; teams can start on either bank. */
 export function spawnPositions(random:()=>number=Math.random):number[]{
@@ -29,9 +40,11 @@ export function spawnPositions(random:()=>number=Math.random):number[]{
 }
 
 export function newTeamGame(now=Date.now(),random:()=>number=Math.random,previous?:TeamState):TeamState{
- const xs=spawnPositions(random),over=previous&&Math.max(...previous.wins)>=2;
- return {version:2,players:xs.map((x,id)=>({id,team:(id%2) as 0|1,character:previous?.players[id].character??CHARACTER_ROSTER[id].id,bot:previous?.players[id].bot??id!==0,x,hp:160,moved:0,turns:0,specialAt:0,itemUsed:false,facing:x<TEAM_WIDTH/2?1:-1})),
- phase:previous?.phase==="lobby"?"lobby":"playing",scene:randomSceneIndex(previous?.scene,random),round:(previous?.round??0)+1,wins:previous&&!over?[...previous.wins]:[0,0],turn:0,turnNo:1,turnStartedAt:now,wind:Math.round(random()*28-14),seed:Math.floor(random()*2147483647),craters:[],winner:null,event:{id:(previous?.event.id??0)+1,kind:"start",at:now},chat:previous?.chat??[],voice:previous?.voice??[]};
+ const xs=spawnPositions(random),over=previous&&Math.max(...previous.wins)>=2,carry=previous&&!over?previous:undefined;
+ return {version:2,players:xs.map((x,id)=>({id,team:(id%2) as 0|1,character:previous?.players[id].character??CHARACTER_ROSTER[id].id,bot:previous?.players[id].bot??id!==0,x,hp:160,moved:0,turns:0,
+ // SS y Dual Shot duran toda la partida: solo vuelven cuando arranca una serie nueva.
+ specialUsed:carry?carry.players[id].specialUsed:false,dualUsed:carry?carry.players[id].dualUsed:false,itemUsed:false,facing:x<TEAM_WIDTH/2?1:-1})),
+ phase:previous?.phase==="lobby"?"lobby":"playing",scene:randomSceneIndex(previous?.scene,random),round:(previous?.round??0)+1,wins:carry?[...carry.wins]:[0,0],turn:0,turnNo:1,turnStartedAt:now,wind:Math.round(random()*28-14),seed:Math.floor(random()*2147483647),craters:[],winner:null,event:{id:(previous?.event.id??0)+1,kind:"start",at:now},chat:previous?.chat??[],voice:previous?.voice??[]};
 }
 
 export function nextPlayers(s:TeamState,count=3):number[]{
@@ -56,19 +69,22 @@ export function moveTeamPlayer(s:TeamState,id:number,delta:number):number{
  return x;
 }
 
+/** Everyone standing inside the blast is hit: shooter, ally and rivals alike. */
+export function blastDamage(s:TeamState,impact:Point,special:boolean):number[]{
+ const radius=special?BLAST.special:BLAST.basic;
+ return s.players.map(target=>target.hp>0&&Math.hypot(impact.x-target.x,impact.y-(teamGround(target.x,s.craters,s.scene)-25))<=radius?(special?DAMAGE.special:DAMAGE.basic):0);
+}
+
 /** Identical trajectory and collision output is used by server, bots and renderer. */
 export function simulateTeamShot(s:TeamState,id:number,angle:number,power:number,direction:number,special=false):Shot{
- const p=s.players[id],a=angle*Math.PI/180,path:Point[]=[],t=tornadoForTurn(s.turnNo,s.seed);
- const tornado=t?{...t,x:t.x*1.3,radius:t.radius*1.3}:null;
+ const p=s.players[id],a=angle*Math.PI/180,path:Point[]=[],tornado=teamTornado(s.turnNo,s.seed);
  let x=p.x,y=teamGround(x,s.craters,s.scene)-47,dx=Math.cos(a)*power*.165*(direction<0?-1:1),dy=-Math.sin(a)*power*.165;
  for(let i=0;i<420;i++){
-  ({x,y,dx,dy}=stepProjectile(x,y,dx,dy,s.wind,tornado));path.push({x,y});
+  ({x,y,dx,dy}=stepProjectile(x,y,dx,dy,s.wind,tornado,TORNADO_PULL));path.push({x,y});
   if(x<=4||x>=TEAM_WIDTH-4||y>=teamGround(x,s.craters,s.scene))break;
  }
  const impact={x:clamp(x,4,TEAM_WIDTH-4),y:Math.min(440,teamGround(clamp(x,4,TEAM_WIDTH-4),s.craters,s.scene))};
- // No team or shooter exclusion: every living player inside the blast is hit.
- const damage=s.players.map(target=>target.hp>0&&Math.hypot(impact.x-target.x,impact.y-(teamGround(target.x,s.craters,s.scene)-25))<=(special?55:42)+22?(special?48:25):0);
- return {path,impact,damage,delay:0};
+ return {path,impact,damage:blastDamage(s,impact,special),delay:0,radius:special?BLAST.special:BLAST.basic,special};
 }
 
 export function applyTeamAction(input:TeamState,id:number,action:GameAction,now=Date.now()):TeamState{
@@ -91,8 +107,10 @@ export function applyTeamAction(input:TeamState,id:number,action:GameAction,now=
  if(id!==s.turn||p.hp<=0)throw new Error("Todavía no es tu turno.");
  if(now<s.turnStartedAt||now>=s.turnStartedAt+TURN_TIME)throw new Error("Espera al siguiente turno.");
  if(action.type==="move"){
-  const delta=Number(action.delta);if(!Number.isFinite(delta))throw new Error("Movimiento inválido.");
-  const x=moveTeamPlayer(s,id,delta);p.moved+=Math.abs(x-p.x);if(x!==p.x)p.facing=x>p.x?1:-1;p.x=x;
+  const delta=Number(action.delta);if(!Number.isFinite(delta)||delta===0)throw new Error("Movimiento inválido.");
+  // El personaje encara hacia donde lo empujas aunque un aliado o el borde lo frenen.
+  p.facing=delta<0?-1:1;
+  const x=moveTeamPlayer(s,id,delta);p.moved+=Math.abs(x-p.x);p.x=x;
   s.event={id:s.event.id+1,kind:"move",at:now,player:id};return s;
  }
  if(action.type==="heal"){
@@ -102,38 +120,49 @@ export function applyTeamAction(input:TeamState,id:number,action:GameAction,now=
  if(action.type!=="fire")throw new Error("Acción desconocida.");
  if(!Number.isFinite(action.power)||!Number.isFinite(action.angle)||Number(action.power)<=0)throw new Error("Carga la potencia antes de disparar.");
  const angle=clamp(Number(action.angle),18,78),power=clamp(Number(action.power),1,100),special=!!action.special,dual=!!action.dual&&!special;
- if(special&&p.turns<p.specialAt)throw new Error("SS todavía está recargando.");
- if(dual&&p.itemUsed)throw new Error("Ya usaste tu item de esta ronda.");
+ if(special&&p.specialUsed)throw new Error("El SS ya se usó en esta partida.");
+ if(dual&&p.dualUsed)throw new Error("El Dual Shot ya se usó en esta partida.");
  p.facing=action.direction===-1?-1:1;
  const shots=[simulateTeamShot(s,id,angle-(dual?2.5:0),power,p.facing,special)];
- if(dual){const second=simulateTeamShot(s,id,angle+2.5,power,p.facing);second.delay=900;shots.push(second);p.itemUsed=true}
+ if(dual){const second=simulateTeamShot(s,id,angle+2.5,power,p.facing);second.delay=900;shots.push(second);p.dualUsed=true}
+ if(special)p.specialUsed=true;
  const duration=Math.ceil(Math.max(...shots.map(shot=>shot.path.length*1000/60+shot.delay))+600);
  s.event={id:s.event.id+1,kind:"fire",at:now,player:id,special,shots,hpBefore:s.players.map(t=>t.hp),cratersBefore:[...s.craters],duration};
- for(const shot of shots){s.players.forEach((target,i)=>{target.hp=Math.max(0,target.hp-shot.damage[i])});s.craters.push({x:shot.impact.x,r:special?19:15})}
- s.craters=s.craters.slice(-24);if(special)p.specialAt=p.turns+4;
+ for(const shot of shots){s.players.forEach((target,i)=>{target.hp=Math.max(0,target.hp-shot.damage[i])});s.craters.push({x:shot.impact.x,r:shot.special?CRATER.special:CRATER.basic})}
+ s.craters=s.craters.slice(-24);
  const alive=[0,1].map(team=>s.players.some(target=>target.team===team&&target.hp>0));
  if(!alive[0]||!alive[1]){s.winner=!alive[0]&&!alive[1]?2:alive[0]?0:1;s.phase="ended";if(s.winner!==2)s.wins[s.winner]++;s.turnStartedAt=now+duration}
  else advance(s,now,duration+700);
  return s;
 }
 
-/** Aim against enemies; strongly penalize friendly and self damage. */
+/** Bots never fire on their own team: an aim that touches an ally is only a last resort. */
 export function chooseBotAction(s:TeamState):GameAction{
  const p=s.players[s.turn];if(p.hp<=100&&!p.itemUsed)return {type:"heal"};
- let best={score:-Infinity,angle:48,power:60,direction:1};
  const enemies=s.players.filter(t=>t.team!==p.team&&t.hp>0);
+ if(!enemies.length)return {type:"timeout"};
+ type Aim={score:number;angle:number;power:number;direction:number;special:boolean};
+ let clean:Aim|null=null,dirty:Aim|null=null;
  for(const direction of [-1,1])for(let angle=22;angle<=76;angle+=6)for(let power=24;power<=100;power+=4){
   const shot=simulateTeamShot(s,p.id,angle,power,direction);
   const nearest=Math.min(...enemies.map(t=>Math.abs(t.x-shot.impact.x)));
-  const score=shot.damage.reduce((sum,damage,i)=>sum+damage*(s.players[i].team===p.team?-3:1),0)*20-nearest;
-  if(score>best.score)best={score,angle,power,direction};
+  // La trayectoria no cambia con el SS: solo el radio, asi que se reutiliza el mismo vuelo.
+  for(const special of p.specialUsed?[false]:[false,true]){
+   const damage=special?blastDamage(s,shot.impact,true):shot.damage;
+   const friendly=damage.reduce((sum,hit,i)=>sum+(s.players[i].team===p.team?hit:0),0);
+   const enemy=damage.reduce((sum,hit,i)=>sum+(s.players[i].team!==p.team?hit:0),0);
+   if(friendly===0){const score=enemy*20-nearest-(special?110:0);if(!clean||score>clean.score)clean={score,angle,power,direction,special}}
+   else{const score=-friendly*45-nearest;if(!dirty||score>dirty.score)dirty={score,angle,power,direction,special:false}}
+  }
  }
- return {type:"fire",angle:best.angle,power:best.power,direction:best.direction,special:p.turns>=p.specialAt};
+ const pick=clean??dirty??{angle:48,power:60,direction:1,special:false};
+ return {type:"fire",angle:pick.angle,power:pick.power,direction:pick.direction,special:pick.special};
 }
 
 export function tickTeamGame(s:TeamState,now=Date.now()):TeamState{
  if(s.phase!=="playing")return s;
- if(s.players[s.turn].bot&&now>=s.turnStartedAt+1100&&now<s.turnStartedAt+TURN_TIME)return applyTeamAction(s,s.turn,chooseBotAction(s),now);
+ // Si el bot se queda sin jugada valida, el turno sigue su curso en vez de tumbar la sala.
+ if(s.players[s.turn].bot&&now>=s.turnStartedAt+1100&&now<s.turnStartedAt+TURN_TIME){try{return applyTeamAction(s,s.turn,chooseBotAction(s),now)}catch{return s}}
  if(now>=s.turnStartedAt+TURN_TIME)return applyTeamAction(s,s.turn,{type:"timeout"},now);
  return s;
 }

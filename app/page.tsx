@@ -1,6 +1,5 @@
 "use client";
 import TeamGame from "./TeamGame";
-export default function Home(){useEffect(()=>{const oldRoom=new URLSearchParams(location.search).get("room");if(oldRoom)location.replace(`/duel?room=${encodeURIComponent(oldRoom)}`)},[]);return <TeamGame/>}
 import {useCallback,useEffect,useRef,useState} from "react";
 import {ChevronLeft,ChevronRight,Copy,MessageCircle,Mic,MicOff,Send,Share2,Sparkles} from "lucide-react";
 import {CHARACTER_ROSTER,DEFAULT_CHARACTERS,characterById,type CharacterId} from "@/lib/characters";
@@ -9,6 +8,9 @@ import {FIELD_WIDTH,MOVE_BUDGET,MOVE_STEP,blastRadius,craterRadius,groundAt,move
 import {useVoiceChat,type VoiceSignal} from "@/app/useVoiceChat";
 type Line={who:string;text:string;emote?:boolean};
 import type {Crater} from "@/lib/battle";
+
+// Las salas 1v1 antiguas llegan con ?room=; se mandan al duelo clasico y el resto ve el 2v2.
+export default function Home(){useEffect(()=>{const oldRoom=new URLSearchParams(location.search).get("room");if(oldRoom)location.replace(`/duel?room=${encodeURIComponent(oldRoom)}`)},[]);return <TeamGame/>}
 type State={positions:[number,number];hp:[number,number];turn:0|1;turnNo:number;roundNo:number;weatherSeed:number;scene:number;nextScene:number|null;matchWins:[number,number];characters:[CharacterId,CharacterId];turnStartedAt:number;moved:[number,number];turnsTaken:[number,number];specialReadyAt:[number,number];itemUsed:[boolean,boolean];wind:number;winner:number|null;craters:Crater[];lastEvent:{type:string;player?:number;impactX?:number;secondImpactX?:number;angle?:number;power?:number;wind?:number;windChanged?:boolean;special?:boolean;dual?:boolean;hit?:boolean;damage?:number;terrain?:number;tornado?:Tornado|null;nonce:number};chat:Line[];voiceSignals?:VoiceSignal[]};
 const TURN_MS=10_000,TURN_PAUSE_MS=1_500,PROJECTILE_LOCK_MS=TURN_PAUSE_MS,DUAL_LOCK_MS=2_900;
 const quips={cry:["¡Auch!","¡Uy, eso dolió!","¡Ese entró!","¡Auch! Directo al orgullo."]};
