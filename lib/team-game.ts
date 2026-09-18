@@ -50,7 +50,17 @@ export type TeamState = {
 };
 export type GameAction = {type:string; delta?:number; angle?:number;power?:number;direction?:number;special?:boolean;dual?:boolean;character?:unknown;text?:string};
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
-export const teamGround=(x:number,craters:Crater[]=[],scene=0)=>groundAt(x/1.3,craters.map(c=>({x:c.x/1.3,r:c.r/1.3})),scene);
+/**
+ * Relieve del 2v2: sobre el perfil del duelo se suman colinas mas marcadas, que
+ * es lo que obliga a buscar angulo en un campo tan ancho. El duelo 1v1 sigue
+ * con su terreno de siempre.
+ */
+export const teamRelief=(x:number,scene=0)=>-25*Math.sin(x/118+scene*1.9)-14*Math.sin(x/47+scene*.7)-7*Math.sin(x/23+scene);
+export const teamGround=(x:number,craters:Crater[]=[],scene=0)=>{
+ const base=groundAt(x/1.3,craters.map(c=>({x:c.x/1.3,r:c.r/1.3})),scene);
+ // El hueco de San Miguel no tiene suelo: ahi no hay colina que valga.
+ return base>=430?base:clamp(base+teamRelief(x,scene),150,404);
+};
 /**
  * El duelo 1v1 levanta el tornado dos turnos de cada seis. En el 2v2 son cuatro
  * turnos de cada ocho, asi que la ronda entera lo sufre por igual. La posicion

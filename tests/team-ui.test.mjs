@@ -110,7 +110,10 @@ test("el juego ofrece pantalla completa donde el navegador la soporta", () => {
 
 test("el fondo sopla hacia el mismo lado que el viento", () => {
   assert.match(ui, /className=\{`team-gusts \$\{game\.wind<0\?"left":"right"\}`\}/);
-  assert.match(ui, /"--gust":`\$\{Math\.max\(3\.2,9-Math\.abs\(game\.wind\)\*\.32\)\}s`/, "mas viento, rafagas mas rapidas");
+  assert.match(ui, /"--gust":`\$\{Math\.max\(2\.6,7\.4-Math\.abs\(game\.wind\)\*\.3\)\}s`/, "mas viento, rafagas mas rapidas");
+  const gusts = ui.match(/team-gusts[^>]*>(<i\/>)+/)?.[0] ?? "";
+  assert.equal((gusts.match(/<i\/>/g) ?? []).length, 8, "ocho rafagas cruzando el fondo");
+  assert.match(css, /\.team-gusts i:nth-child\(8\)\{/);
   assert.match(css, /@keyframes team-gust\{/);
   assert.match(css, /@keyframes team-gust-left\{/);
   assert.match(css, /\.team-gusts\.left i\{animation-name:team-gust-left\}/);
@@ -138,4 +141,27 @@ test("el personaje da una zancada corta al caminar", () => {
   assert.match(ui, /\$\{walking\(p\.id\)\?"walking":""\}/);
   assert.match(css, /\.team-fighter\.walking img\{animation:team-step/);
   assert.match(css, /@keyframes team-step\{/);
+});
+
+test("todo el juego entra en una pantalla, sin subir ni bajar", () => {
+  assert.match(ui, /\$\{game\.phase==="lobby"\?"is-lobby":"is-playing"\}/);
+  assert.match(css, /\.team-app\.is-playing\{height:100dvh;overflow:hidden;display:flex;flex-direction:column/);
+  assert.match(css, /\.team-app\.is-playing \.team-field\{flex:1 1 auto/, "el campo se queda con el espacio que sobra");
+  assert.match(css, /\.team-app\.is-playing \.team-chat\{position:fixed/, "el chat flota en vez de empujar");
+});
+
+test("el marcador y el orden de turnos viven en una sola columna del campo", () => {
+  assert.match(ui, /<aside className="team-board"/);
+  assert.match(ui, /const remaining=[^\n]*order=\[game\.turn,\.\.\.next\]/, "la columna arranca por quien juega ahora");
+  assert.doesNotMatch(ui, /className="team-roster" aria-label="Jugadores y vida"/, "el marcador de arriba desaparece");
+  assert.doesNotMatch(ui, /className="team-turn-queue"/, "la fila de abajo tambien");
+  assert.match(css, /\.team-board\{position:absolute;z-index:6/);
+});
+
+test("espacio y flechas no mueven la pagina, y el angulo se ajusta esperando turno", () => {
+  assert.match(ui, /if\(event\.code==="Space"\)\{event\.preventDefault\(\);startCharge\(\);return\}/);
+  assert.match(ui, /if\(event\.key==="ArrowUp"\|\|event\.key==="ArrowDown"\)\{event\.preventDefault\(\);setAngle/, "el angulo se mueve siempre");
+  assert.match(ui, /if\(event\.key==="ArrowLeft"\|\|event\.key==="ArrowRight"\)\{event\.preventDefault\(\);if\(myTurn\)walk/, "caminar sigue siendo solo en tu turno");
+  assert.match(ui, /className=\{`team-aim-guide \$\{myTurn\?"":"waiting"\}`\}/);
+  assert.match(css, /\.team-aim-guide\.waiting\{opacity:/);
 });

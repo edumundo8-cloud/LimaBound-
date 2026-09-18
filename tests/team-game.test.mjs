@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
-import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,teamRelief,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
 import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
@@ -148,14 +148,21 @@ test("el monumento central es una muralla: frena disparos y pasos",()=>{
   const wall=wallFor(scene);assert.ok(wall,`falta la muralla del escenario ${scene}`);
   const s=newTeamGame(1000,fixed);s.scene=scene;s.wind=0;
   s.players[0].x=wall.x0-120;s.players[1].x=wall.x1+120;s.players[2].x=90;s.players[3].x=TEAM_WIDTH-90;
-  // Un tiro tenso contra el monumento revienta antes de cruzarlo.
-  const shot=simulateTeamShot(s,0,26,100,1);
-  assert.equal(shot.wall,true,"el proyectil tenia que chocar");
-  assert.ok(shot.impact.x<=wall.x1+1,"no puede aparecer del otro lado");
-  assert.ok(shot.impact.y<teamGround(shot.impact.x,s.craters,scene),"la explosion queda en la pared, no en el suelo");
-  assert.ok(shot.path.every(point=>point.x<=wall.x1+1));
+  // Ninguna trayectoria puede seguir de largo dentro del monumento.
+  const techo=teamGround(TEAM_WIDTH/2,[],scene)-wall.height;
+  let choques=null;
+  for(const angle of [20,26,32,38,44,50,56])for(const power of [40,55,70,85,100]){
+   const shot=simulateTeamShot(s,0,angle,power,1);
+   const dentro=shot.path.filter(point=>point.x>wall.x0&&point.x<wall.x1&&point.y>techo);
+   assert.ok(dentro.length<=1,`el proyectil atraveso el monumento (${angle}°, ${power}%)`);
+   if(shot.wall){
+    assert.ok(shot.impact.y<teamGround(shot.impact.x,s.craters,scene),"la explosion queda en la pared, no en el suelo");
+    choques??={angle,power};
+   }
+  }
+  assert.ok(choques,`ninguna trayectoria choco con el monumento del escenario ${scene}`);
   // Y el impacto en la muralla no abre hueco en el terreno.
-  const after=applyTeamAction(s,0,{type:"fire",angle:26,power:100,direction:1},1001);
+  const after=applyTeamAction(s,0,{type:"fire",angle:choques.angle,power:choques.power,direction:1},1001);
   assert.deepEqual(after.craters,[]);
   // Caminar tampoco lo atraviesa.
   s.players[0].x=wall.x0-10;
@@ -192,6 +199,23 @@ test("pasos cortos y proyectil un 6% mas rapido",()=>{
   for(let i=0;i<420;i++){x+=dx;y+=dy;dy+=.17;if(y>=teamGround(x,[],2))break}return x})();
  const rapido=simulateTeamShot(s,0,.8*180/Math.PI,60,1).impact.x;
  assert.ok(rapido>lento,`el tiro nuevo (${Math.round(rapido)}) debe pasar al viejo (${Math.round(lento)})`);
+});
+
+test("el terreno del 2v2 tiene colinas mas pronunciadas que el del duelo",()=>{
+ for(const scene of [1,2,3]){
+  const alturas=[];
+  for(let x=60;x<TEAM_WIDTH-60;x+=12)alturas.push(teamGround(x,[],scene));
+  const desnivel=Math.max(...alturas)-Math.min(...alturas);
+  assert.ok(desnivel>70,`el escenario ${scene} quedo demasiado plano (${Math.round(desnivel)})`);
+  assert.ok(alturas.every(y=>y>140&&y<410),"el suelo no puede salirse del campo");
+  // Varias subidas y bajadas, no una sola rampa.
+  let cambios=0;
+  for(let i=2;i<alturas.length;i++)if(Math.sign(alturas[i]-alturas[i-1])!==Math.sign(alturas[i-1]-alturas[i-2]))cambios++;
+  assert.ok(cambios>=6,`el escenario ${scene} necesita mas lomas (${cambios})`);
+ }
+ // El hueco de San Miguel sigue sin suelo.
+ assert.equal(teamGround(TEAM_WIDTH/2,[],4),440);
+ assert.notEqual(teamRelief(200,1),teamRelief(200,2),"cada mapa lleva su propio relieve");
 });
 
 function sqliteDB(){
