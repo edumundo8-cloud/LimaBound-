@@ -16,6 +16,12 @@
 .team-brand{font-weight:900;font-size:clamp(16px,3.4vw,20px);text-decoration:none;color:#fff!important}
 .team-brand small{margin-left:7px;font-size:11px;color:#82e6b2}
 .team-header>a:not(.team-brand){font-size:12px}
+.team-app .team-fullscreen{min-height:32px;padding:5px 10px;font-size:12px}
+/* En pantalla completa el fondo negro del navegador se rellena y el mapa crece. */
+.team-app:fullscreen{overflow:auto;padding:10px}
+.team-app.is-fullscreen .team-stage{height:clamp(240px,52vh,620px)}
+.team-app.is-fullscreen .team-field{max-width:min(1600px,96vw)}
+.team-app.is-fullscreen .team-roster,.team-app.is-fullscreen .team-arena-heading,.team-app.is-fullscreen .team-controls,.team-app.is-fullscreen .team-social{max-width:min(1600px,96vw)}
 .team-notice{max-width:900px;margin:8px auto;padding:10px;background:#243d50;border-radius:10px;font-size:14px;text-align:center}
 
 /* --- Sala de espera --- */
@@ -59,6 +65,23 @@
 .team-field{border:2px solid #8aa7c8;border-radius:18px;background:#111d32;overflow:hidden;box-shadow:0 13px 38px #0005}
 .team-stage{height:clamp(215px,30vw + 60px,420px);position:relative;overflow:hidden}
 .team-backdrop,.team-terrain{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+/*
+ * Rafagas: lineas finisimas que cruzan el fondo hacia donde sopla el viento. La
+ * duracion llega desde la interfaz (--gust): a mas viento, mas rapido cruzan.
+ */
+.team-gusts{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.team-gusts i{position:absolute;height:1px;width:22%;border-radius:1px;background:linear-gradient(90deg,transparent,#eaf6ff5c,transparent);opacity:0;animation:team-gust var(--gust,7s) linear infinite}
+.team-gusts.left i{animation-name:team-gust-left}
+.team-gusts i:nth-child(1){top:14%;width:26%;animation-delay:-.4s}
+.team-gusts i:nth-child(2){top:27%;width:17%;animation-delay:-2.1s;opacity:0}
+.team-gusts i:nth-child(3){top:38%;width:30%;animation-delay:-3.6s}
+.team-gusts i:nth-child(4){top:49%;width:20%;animation-delay:-1.3s}
+.team-gusts i:nth-child(5){top:60%;width:24%;animation-delay:-4.7s}
+.team-gusts i:nth-child(6){top:70%;width:15%;animation-delay:-5.9s}
+@keyframes team-gust{0%{transform:translateX(-120%);opacity:0}12%{opacity:.5}80%{opacity:.35}100%{transform:translateX(520%);opacity:0}}
+@keyframes team-gust-left{0%{transform:translateX(520%);opacity:0}12%{opacity:.5}80%{opacity:.35}100%{transform:translateX(-120%);opacity:0}}
+/* El monumento del centro es solido: se dibuja su base para que se lea como muralla. */
+.team-wall{position:absolute;z-index:3;pointer-events:none;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#ffffff0f,#0b12203d 60%,#060c1859);box-shadow:inset 0 0 0 1px #dfeaff26,0 3px 10px #0007}
 .team-terrain{z-index:2}
 .team-aim-guide{animation:team-aim-pulse 1.5s ease-in-out infinite}
 @keyframes team-aim-pulse{50%{opacity:.55}}
@@ -82,10 +105,13 @@
 @keyframes team-wind-left{50%{transform:translateX(-4px);opacity:.65}}
 @keyframes team-wind-right{50%{transform:translateX(4px);opacity:.65}}
 /* --- Tornado: embudo que gira, se mece y arrastra polvo --- */
-.team-tornado{position:absolute;z-index:3;inset:0 auto 0 0;transform:translateX(-50%);pointer-events:none;overflow:visible;animation:team-tornado-sway 4.2s ease-in-out infinite}
-.team-tornado u{position:absolute;inset:6% 0 8%;border-radius:50% 50% 46% 46%/62% 62% 38% 38%;background:linear-gradient(180deg,#d8eeff3d,#9fc8ef26 62%,#6f9fd41a);filter:blur(1px);clip-path:polygon(0 0,100% 0,72% 100%,28% 100%)}
-.team-tornado i{position:absolute;left:50%;border:2px solid #cfeaffb0;border-left-color:#ffffff1a;border-right-color:#7fa8cf55;border-radius:50%;background:linear-gradient(110deg,transparent,#dff2ff33,transparent);transform:translateX(-50%);animation:team-vortex 1.05s linear infinite;transform-origin:50% 50%}
-.team-tornado i:nth-child(2){top:2%;width:100%;height:15%;animation-delay:-.05s}
+.team-tornado{position:absolute;z-index:3;inset:0 auto 0 0;transform:translateX(-50%);pointer-events:none;overflow:visible;animation:team-tornado-sway 5.6s ease-in-out infinite;filter:drop-shadow(0 6px 14px #06101e55)}
+/* Columna: mas ancha y clara arriba, apretada y sucia abajo, siempre algo borrosa. */
+.team-tornado u{position:absolute;inset:3% 0 6%;border-radius:46% 54% 40% 40%/58% 58% 42% 42%;background:linear-gradient(180deg,#e6f4ff4d,#bcd9f52e 45%,#8fb2d426 74%,#6b8aab1f);filter:blur(2.5px);clip-path:polygon(2% 0,98% 0,68% 100%,32% 100%);animation:team-tornado-breathe 3.1s ease-in-out infinite}
+/* Polvo levantado en la base, que es lo que delata un tornado de verdad. */
+.team-tornado u:after{content:"";position:absolute;left:-26%;right:-26%;bottom:-6%;height:24%;border-radius:50%;background:radial-gradient(ellipse at 50% 70%,#e9f4ff40,#b9d2ea1f 55%,transparent 72%);filter:blur(3px)}
+.team-tornado i{position:absolute;left:50%;border:2px solid #dcf1ffc4;border-top-color:#ffffff30;border-left-color:#ffffff12;border-right-color:#7fa8cf4d;border-radius:50%;background:linear-gradient(110deg,transparent,#e8f6ff3d,transparent);transform:translateX(-50%);animation:team-vortex 1.05s linear infinite,team-tornado-rise 2.8s linear infinite;transform-origin:50% 50%;opacity:.9}
+.team-tornado i:nth-child(2){top:2%;width:100%;height:15%;animation-delay:-.05s,-.1s;opacity:.55}
 .team-tornado i:nth-child(3){top:14%;width:93%;height:14%;animation-delay:-.2s}
 .team-tornado i:nth-child(4){top:26%;width:85%;height:13%;animation-delay:-.35s}
 .team-tornado i:nth-child(5){top:39%;width:75%;height:12%;animation-delay:-.5s}
@@ -93,17 +119,19 @@
 .team-tornado i:nth-child(7){top:65%;width:52%;height:10%;animation-delay:-.8s}
 .team-tornado i:nth-child(8){top:77%;width:40%;height:9%;animation-delay:-.95s}
 .team-tornado i:nth-child(9){top:88%;width:28%;height:8%;animation-delay:-1.1s}
-.team-tornado b{position:absolute;bottom:6%;left:50%;width:5px;height:5px;border-radius:50%;background:#e8f6ff;opacity:.75;animation:team-debris 2.4s ease-in infinite}
+.team-tornado b{position:absolute;bottom:6%;left:50%;width:4px;height:4px;border-radius:50%;background:#e8f6ff;opacity:.7;filter:blur(.3px);animation:team-debris 2.4s ease-in infinite}
 .team-tornado b:nth-of-type(2){animation-delay:-.8s;background:#ffe6b8}
 .team-tornado b:nth-of-type(3){animation-delay:-1.6s;background:#cfe7ff}
 .team-tornado.counterclockwise i{animation-direction:reverse}
 .team-tornado.counterclockwise b{animation-name:team-debris-reverse}
 .team-tornado span{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);padding:2px 6px;background:#152c46d9;border-radius:6px;color:#d8efff;font-size:8px;letter-spacing:.09em}
 @keyframes team-vortex{to{transform:translateX(-50%) rotate(360deg)}}
-@keyframes team-tornado-sway{50%{transform:translateX(-50%) skewX(-4deg)}}
+@keyframes team-tornado-rise{0%{margin-top:6px}100%{margin-top:-6px}}
+@keyframes team-tornado-breathe{50%{transform:scaleX(1.06)}}
+@keyframes team-tornado-sway{30%{transform:translateX(-50%) skewX(-5deg)}70%{transform:translateX(-50%) skewX(3deg)}}
 @keyframes team-debris{0%{transform:translate(-50%,0) scale(1);opacity:.8}100%{transform:translate(22px,-190px) scale(.4);opacity:0}}
 @keyframes team-debris-reverse{0%{transform:translate(-50%,0) scale(1);opacity:.8}100%{transform:translate(-42px,-190px) scale(.4);opacity:0}}
-@media(prefers-reduced-motion:reduce){.team-tornado,.team-tornado i,.team-tornado b,.team-wind i,.team-aim-guide{animation:none}}
+@media(prefers-reduced-motion:reduce){.team-tornado,.team-tornado u,.team-tornado i,.team-tornado b,.team-wind i,.team-aim-guide,.team-gusts i{animation:none}.team-gusts{display:none}}
 .team-turn-queue{min-height:42px;display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding:6px 12px;background:#0e1b2fec;border-top:1px solid #ffffff22;font-size:clamp(10px,2vw,12px)}
 .team-turn-queue>b{font-size:10px;color:#9bb1d0}
 .team-turn-queue span{color:var(--player-color);font-weight:bold}
@@ -120,6 +148,7 @@
 /* Flex en vez de grid: el boton de disparo baja solo cuando la fila se queda sin ancho. */
 .team-aim{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
 .team-aim label{flex:1 1 130px;min-width:0;font-size:12px}
+.team-bonus{font-style:normal;margin-left:5px;padding:1px 5px;border-radius:5px;background:#3c5c21;color:#d8ff9e;font-size:10px}
 .team-aim label b{float:right}
 .team-aim input{width:100%;accent-color:#79eab1;min-height:30px}
 .team-direction{display:flex;gap:3px}
@@ -153,6 +182,10 @@
 /* Telefono vertical: el mapa y los controles tienen que caber sin hacer scroll. */
 @media(max-width:700px){
  .team-header>span{order:3;margin-left:0;font-size:11px}
+ /* En el telefono el boton de pantalla completa se queda solo con su icono. */
+ .team-app .team-fullscreen{font-size:0;padding:5px 9px}
+ .team-app .team-fullscreen:before{content:"⛶";font-size:15px}
+ .team-app.is-fullscreen .team-fullscreen:before{content:"⤡"}
  .team-roster article{display:block;padding:4px 5px;text-align:center;border-left-width:3px}
  .team-roster img{display:none}
  .team-roster b{font-size:9px;line-height:1.25}

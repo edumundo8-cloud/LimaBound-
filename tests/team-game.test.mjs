@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
-import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,COLORS,TEAM_COLORS,BLAST,CRATER,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
 import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
@@ -30,9 +30,10 @@ test("el movimiento consume presupuesto y respeta huecos y otros jugadores",()=>
 });
 test("explosiones dañan al atacante, aliados y rivales dentro del mismo radio",()=>{
  const s=newTeamGame(1000,fixed);s.scene=1;s.wind=0;s.players.forEach(p=>{p.x=300;p.bot=false});
- const shot=simulateTeamShot(s,0,78,1,1);assert.deepEqual(shot.damage,[25,25,25,25]);
+ const alto=Math.round(DAMAGE.basic*HIGH_ANGLE_BONUS);
+ const shot=simulateTeamShot(s,0,78,1,1);assert.deepEqual(shot.damage,[alto,alto,alto,alto]);
  const next=applyTeamAction(s,0,{type:"fire",angle:78,power:1,direction:1},1001);
- assert.deepEqual(next.players.map(p=>p.hp),[135,135,135,135]);assert.equal(s.players[0].hp,160);
+ assert.deepEqual(next.players.map(p=>p.hp),[160-alto,160-alto,160-alto,160-alto]);assert.equal(s.players[0].hp,160);
  assert.equal(next.event.shots.length,1);assert.ok(next.turnStartedAt>=1001+next.event.duration);
 });
 test("el fuego amigo puede terminar en empate y no entrega una victoria falsa",()=>{
@@ -112,6 +113,72 @@ test("el tornado del 2v2 desvia menos que el del duelo",()=>{
  const straight=fly(0),duel=fly(1),team=fly(.45);
  assert.ok(Math.abs(team.x-straight.x)<Math.abs(duel.x-straight.x)/2,"el 2v2 debe desviar menos de la mitad");
  assert.ok(Math.abs(team.x-straight.x)>1,"pero el tornado tiene que seguir notandose");
+});
+
+test("los tiros por encima de 70 grados pegan un 15% mas",()=>{
+ assert.equal(angleBonus(HIGH_ANGLE),1);assert.equal(angleBonus(HIGH_ANGLE+1),HIGH_ANGLE_BONUS);
+ const s=newTeamGame(1000,fixed);s.scene=1;s.wind=0;s.players.forEach(p=>{p.x=300});
+ const plano=simulateTeamShot(s,0,HIGH_ANGLE,1,1).damage[1];
+ const alto=simulateTeamShot(s,0,HIGH_ANGLE+2,1,1).damage[1];
+ assert.equal(plano,DAMAGE.basic);
+ assert.equal(alto,Math.round(DAMAGE.basic*HIGH_ANGLE_BONUS));
+ assert.ok(alto>plano,"el angulo alto tiene que pagar mejor");
+ // El SS tambien cobra el bonus y ya pega un 20% mas que antes.
+ assert.equal(DAMAGE.special,58);
+ assert.equal(simulateTeamShot(s,0,HIGH_ANGLE+2,1,1,true).damage[1],Math.round(DAMAGE.special*HIGH_ANGLE_BONUS));
+});
+test("el tornado dura cuatro turnos seguidos, uno por jugador",()=>{
+ const seed=987654;
+ const vivos=[];
+ for(let turno=1;turno<=TORNADO_PERIOD*3;turno++)if(teamTornado(turno,seed))vivos.push(turno);
+ assert.ok(vivos.length>=TORNADO_TURNS,"tiene que aparecer al menos una vez");
+ // Cada aparicion es un bloque de cuatro turnos consecutivos.
+ const bloques=[];
+ for(const turno of vivos){
+  const ultimo=bloques.at(-1);
+  if(ultimo&&turno===ultimo.at(-1)+1)ultimo.push(turno);else bloques.push([turno]);
+ }
+ for(const bloque of bloques)assert.equal(bloque.length,TORNADO_TURNS,`bloque corto: ${bloque}`);
+ // Dentro del bloque es el mismo vortice para todos.
+ for(const bloque of bloques)for(const turno of bloque)assert.deepEqual(teamTornado(turno,seed),teamTornado(bloque[0],seed));
+ assert.notDeepEqual(teamTornado(bloques[0][0],seed),teamTornado(bloques[1]?.[0]??bloques[0][0],seed+1));
+});
+test("el monumento central es una muralla: frena disparos y pasos",()=>{
+ for(const scene of [0,1]){
+  const wall=wallFor(scene);assert.ok(wall,`falta la muralla del escenario ${scene}`);
+  const s=newTeamGame(1000,fixed);s.scene=scene;s.wind=0;
+  s.players[0].x=wall.x0-120;s.players[1].x=wall.x1+120;s.players[2].x=90;s.players[3].x=TEAM_WIDTH-90;
+  // Un tiro tenso contra el monumento revienta antes de cruzarlo.
+  const shot=simulateTeamShot(s,0,26,100,1);
+  assert.equal(shot.wall,true,"el proyectil tenia que chocar");
+  assert.ok(shot.impact.x<=wall.x1+1,"no puede aparecer del otro lado");
+  assert.ok(shot.impact.y<teamGround(shot.impact.x,s.craters,scene),"la explosion queda en la pared, no en el suelo");
+  assert.ok(shot.path.every(point=>point.x<=wall.x1+1));
+  // Y el impacto en la muralla no abre hueco en el terreno.
+  const after=applyTeamAction(s,0,{type:"fire",angle:26,power:100,direction:1},1001);
+  assert.deepEqual(after.craters,[]);
+  // Caminar tampoco lo atraviesa.
+  s.players[0].x=wall.x0-10;
+  assert.ok(moveTeamPlayer(s,0,TEAM_STEP)<=wall.x0-24+.001);
+  s.players[1].x=wall.x1+10;
+  assert.ok(moveTeamPlayer(s,1,-TEAM_STEP)>=wall.x1+24-.001);
+ }
+ assert.equal(wallFor(2),null,"Gamarra no dibuja monumento, no lleva muralla");
+});
+test("el viento aguanta al menos tres turnos antes de cambiar de lado",()=>{
+ for(let seed=0;seed<40;seed++){
+  let s=newTeamGame(1000,()=>(seed*17%97)/97);s.players.forEach(p=>{p.bot=false});
+  let signo=Math.sign(s.wind),desde=1;
+  assert.notEqual(signo,0,"el viento nunca arranca en cero");
+  for(let turno=0;turno<24;turno++){
+   s=applyTeamAction(s,s.turn,{type:"timeout"},s.turnStartedAt+10001);
+   const nuevo=Math.sign(s.wind);
+   if(nuevo!==signo){
+    assert.ok(s.turnNo-desde>=WIND_HOLD,`el viento giro en ${s.turnNo-desde} turnos`);
+    signo=nuevo;desde=s.turnNo;
+   }
+  }
+ }
 });
 
 function sqliteDB(){

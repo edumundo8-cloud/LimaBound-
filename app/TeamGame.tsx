@@ -4,7 +4,7 @@ import {useCallback,useEffect,useRef,useState,type CSSProperties} from "react";
 import Link from "next/link";
 import {CHARACTER_ROSTER,characterById,type CharacterId} from "@/lib/characters";
 import {SCENES} from "@/lib/scenes";
-import {COLORS,TEAM_COLORS,teamTornado,TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,TURN_TIME,applyTeamAction,newTeamGame,nextPlayers,teamGround,tickTeamGame,type GameAction,type TeamState} from "@/lib/team-game";
+import {COLORS,TEAM_COLORS,CRATER,HIGH_ANGLE,teamTornado,wallFor,TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,TURN_TIME,applyTeamAction,newTeamGame,nextPlayers,teamGround,tickTeamGame,type GameAction,type TeamState} from "@/lib/team-game";
 import "./team-game.css";
 import {useTeamVoice} from "./useTeamVoice";
 
@@ -18,6 +18,8 @@ export default function TeamGame(){
  const [choice,setChoice]=useState<CharacterId>("perro-peruano"),[joinCode,setJoinCode]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false);
  const [angle,setAngle]=useState(48),[power,setPower]=useState(0),[charging,setCharging]=useState(false),[direction,setDirection]=useState<1|-1>(1),[shotType,setShotType]=useState<"basic"|"special"|"dual">("basic");
  const [chatOpen,setChatOpen]=useState(false),[draft,setDraft]=useState(""),[clock,setClock]=useState(0),[lastPower,setLastPower]=useState<number|null>(null);
+ const [fullscreen,setFullscreen]=useState(false),[canFullscreen,setCanFullscreen]=useState(false);
+ const shell=useRef<HTMLElement>(null);
  const sound=useRef<AudioContext|null>(null),lastSound=useRef(0);
  const unlockSound=()=>{try{sound.current??=new AudioContext();if(sound.current.state==="suspended")void sound.current.resume()}catch{}};
  useEffect(()=>{const event=game.event;if(event.id===lastSound.current)return;lastSound.current=event.id;const audio=sound.current;if(!audio||audio.state!=="running")return;
@@ -25,6 +27,15 @@ export default function TeamGame(){
   if(event.kind==="fire"){tone(670);event.shots?.forEach(shot=>tone(145,Math.max(0,(event.at+shot.delay+shot.path.length*1000/60-Date.now()-clockOffset.current)/1000)))}else if(event.kind==="move")tone(250);
  },[game.event]);
  useEffect(()=>()=>{void sound.current?.close()},[]);
+ // Pantalla completa: el iPhone no la ofrece para elementos, asi que el boton solo
+ // aparece donde el navegador la soporta de verdad.
+ useEffect(()=>{setCanFullscreen(!!document.fullscreenEnabled&&!!shell.current?.requestFullscreen);
+  const sync=()=>setFullscreen(!!document.fullscreenElement);
+  document.addEventListener("fullscreenchange",sync);return()=>document.removeEventListener("fullscreenchange",sync)},[]);
+ const toggleFullscreen=useCallback(()=>{
+  if(document.fullscreenElement)void document.exitFullscreen().catch(()=>{});
+  else void shell.current?.requestFullscreen().catch(()=>setNotice("Tu navegador no dejó abrir la pantalla completa."));
+ },[]);
  const stateRef=useRef(game),revision=useRef(-1),clockOffset=useRef(0),chargeStart=useRef(0),chargeFrame=useRef(0),powerRef=useRef(0),roomRef=useRef(room),actionLock=useRef(false),chatInput=useRef<HTMLInputElement>(null);
  const applyRoom=useCallback((result:RoomResult)=>{if(result.revision<revision.current)return;revision.current=result.revision;clockOffset.current=result.serverNow-Date.now();setGame(result.state);stateRef.current=result.state;setRole(result.role);setOccupied(result.occupied)},[]);
  useEffect(()=>{stateRef.current=game},[game]);
@@ -68,13 +79,19 @@ export default function TeamGame(){
  const select=(id:CharacterId)=>{setChoice(id);if(room)void act({type:"select",character:id})};
  const share=async()=>{const url=`${location.origin}/?team=${room}`;try{if(navigator.share)await navigator.share({title:"LimaBound 2 contra 2",url});else{await navigator.clipboard.writeText(url);setNotice("Enlace copiado. Envíalo a tus amigos.")}}catch(error){if((error as Error).name!=="AbortError")setNotice(`Comparte el código ${room}.`)}};
  const send=()=>{if(!draft.trim())return;void act({type:"chat",text:draft});setDraft("")};
- const scene=SCENES[game.scene],elapsed=Math.max(0,clock-game.event.at),firing=game.event.kind==="fire"&&elapsed<(game.event.duration??0),displayCraters=firing?(game.event.cratersBefore??game.craters):game.craters;
+ const scene=SCENES[game.scene],elapsed=Math.max(0,clock-game.event.at),firing=game.event.kind==="fire"&&elapsed<(game.event.duration??0);
+ const landedAt=(shot:{delay:number;path:unknown[]})=>shot.delay+shot.path.length*1000/60;
+ // El crater se abre en el mismo instante del impacto, no cuando termina la animacion.
+ const displayCraters=firing
+  ?[...(game.event.cratersBefore??[]),...(game.event.shots??[]).filter(shot=>!shot.wall&&elapsed>=landedAt(shot)).map(shot=>({x:shot.impact.x,r:shot.special?CRATER.special:CRATER.basic}))]
+  :game.craters;
  const shownHP=(id:number)=>{if(!firing||!game.event.hpBefore)return game.players[id].hp;return Math.max(0,game.event.hpBefore[id]-(game.event.shots??[]).reduce((sum,shot)=>sum+(elapsed>=shot.delay+shot.path.length*1000/60?shot.damage[id]:0),0))};
+ const wall=wallFor(game.scene);
  const terrain=Array.from({length:Math.ceil(TEAM_WIDTH/4)+1},(_,i)=>{const x=Math.min(TEAM_WIDTH,i*4);return `${x},${teamGround(x,displayCraters,game.scene)}`}).join(" ");
  const aimGround=teamGround(mine.x,displayCraters,game.scene)-38,aimReach=54+power*.5,aim={x0:mine.x,y0:aimGround,x1:mine.x+Math.cos(angle*Math.PI/180)*aimReach*direction,y1:aimGround-Math.sin(angle*Math.PI/180)*aimReach};
  const remaining=Math.max(0,Math.ceil((game.turnStartedAt+TURN_TIME-clock)/1000)),next=nextPlayers(game),ended=game.phase==="ended"&&!firing,tornado=teamTornado(game.turnNo,game.seed);
- return <main className="team-app" onPointerDown={unlockSound} onKeyDown={unlockSound}>
-  <header className="team-header"><Link href="/" className="team-brand">✦ LIMA BOUND <small>2 VS 2</small></Link><span>Equipo {mine.team===0?"A":"B"} · J{role+1}</span><Link href="/duel">Duelo 1v1</Link>{room&&<button onClick={share}>Invitar · {room}</button>}</header>
+ return <main ref={shell} className={`team-app ${fullscreen?"is-fullscreen":""}`} onPointerDown={unlockSound} onKeyDown={unlockSound}>
+  <header className="team-header"><Link href="/" className="team-brand">✦ LIMA BOUND <small>2 VS 2</small></Link><span>Equipo {mine.team===0?"A":"B"} · J{role+1}</span><Link href="/duel">Duelo 1v1</Link>{canFullscreen&&<button className="team-fullscreen" onClick={toggleFullscreen} aria-pressed={fullscreen}>{fullscreen?"⤡ Salir":"⛶ Pantalla completa"}</button>}{room&&<button onClick={share}>Invitar · {room}</button>}</header>
   {notice&&<p className="team-notice" role="status">{notice}</p>}
   {game.phase==="lobby"?<section className="team-lobby">
    <div className="team-lobby-title"><small>CUATRO JUGADORES · DOS EQUIPOS</small><h1>Arma tu equipo</h1><p>Invita a tus amigos o juega con bots. Las explosiones también dañan a tus aliados.</p></div>
@@ -90,6 +107,8 @@ export default function TeamGame(){
    <section className="team-field" aria-label={`Mapa ${scene.label}`} data-scene={game.scene} data-round={game.round}>
     <div className="team-stage" key={`${game.round}-${game.scene}`}>
      <img className="team-backdrop" src={scene.src} alt={`Escenario ${scene.label}`} fetchPriority="high"/>
+     {/* Rafagas apenas visibles: solo marcan hacia donde empuja el viento. */}
+     <div className={`team-gusts ${game.wind<0?"left":"right"}`} style={{"--gust":`${Math.max(3.2,9-Math.abs(game.wind)*.32)}s`} as CSSProperties} aria-hidden="true"><i/><i/><i/><i/><i/><i/></div>
      <svg className="team-terrain" viewBox={`0 0 ${TEAM_WIDTH} 390`} preserveAspectRatio="none" aria-hidden="true" style={{"--aim":COLORS[role]} as CSSProperties}><defs><linearGradient id="team-ground-fill" x2="0" y2="1"><stop stopColor="#595965"/><stop offset="1" stopColor="#151d30"/></linearGradient><marker id="team-aim-head" viewBox="0 0 12 12" refX="8.5" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1.5 1.5 L11 6 L1.5 10.5 L4.2 6 Z" fill="var(--aim,#fff)"/></marker></defs><polygon points={`0,450 ${terrain} ${TEAM_WIDTH},450`} fill="url(#team-ground-fill)"/><polyline points={terrain} fill="none" stroke="#e8d6ac" strokeWidth="3"/>
       {myTurn&&aim&&<g className="team-aim-guide"><circle cx={aim.x0} cy={aim.y0} r="3.2" fill={COLORS[role]} opacity=".75"/><line x1={aim.x0} y1={aim.y0} x2={aim.x1} y2={aim.y1} stroke={COLORS[role]} strokeWidth="2.4" strokeLinecap="round" strokeDasharray="9 7" opacity=".8" markerEnd="url(#team-aim-head)"/></g>}
       {firing&&game.event.shots?.map((shot,i)=>{
@@ -107,6 +126,7 @@ export default function TeamGame(){
      </svg>
      <div className={`team-wind ${game.wind<0?"left":"right"}`} aria-label={`Viento ${Math.abs(game.wind)} hacia ${game.wind<0?"la izquierda":"la derecha"}`}><b>VIENTO</b><i>{game.wind<0?"←":"→"}</i><em>{Math.abs(game.wind)}</em></div>
      {tornado&&<div className={`team-tornado ${tornado.spin<0?"counterclockwise":""}`} style={{left:`${tornado.x/TEAM_WIDTH*100}%`,width:`${tornado.radius*2/TEAM_WIDTH*100}%`}} aria-label="Tornado: desvía un poco los disparos"><u/><i/><i/><i/><i/><i/><i/><i/><i/><b/><b/><b/><span>TORNADO</span></div>}
+     {wall&&<div className="team-wall" style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}} aria-label="Monumento: los disparos no lo atraviesan"/>}
      {(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}
      {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}><span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
     </div>
@@ -114,7 +134,7 @@ export default function TeamGame(){
    </section>
    {ended?<section className="team-result" role="status"><h2>{game.winner===2?"Empate":game.winner===mine.team?"¡Victoria de tu equipo!":"Gana el equipo rival"}</h2><p>Serie A {game.wins[0]}–{game.wins[1]} B · Mejor de tres</p>{(!room||role===0)?<button className="team-primary" onClick={()=>void act({type:"rematch"})}>{Math.max(...game.wins)>=2?"Nueva partida":"Siguiente ronda"}</button>:<p>El anfitrión iniciará la siguiente ronda.</p>}</section>:<section className="team-controls" aria-label="Controles de combate">
     <div className="team-charge"><label>Potencia <b>{power}%</b></label><button disabled={!myTurn} className={charging?"charging":""} aria-label="Mantén presionado para cargar" onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);startCharge()}} onPointerUp={stopCharge} onPointerCancel={stopCharge} onLostPointerCapture={stopCharge} onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();startCharge()}}} onKeyUp={e=>{if(e.key===" "||e.key==="Enter")stopCharge()}}><i style={{width:`${power}%`}}/>{lastPower!==null&&<u style={{left:`${lastPower}%`}}/>}<span>{charging?"Suelta para fijar":power>0?"Potencia lista":"Mantén para cargar"}</span></button></div>
-    <div className="team-aim"><label>Ángulo <b>{angle}°</b><input aria-label="Ángulo de disparo" type="range" min="18" max="78" value={angle} onChange={e=>setAngle(Number(e.target.value))}/></label><div className="team-direction"><button aria-label="Apuntar a la izquierda" aria-pressed={direction===-1} onClick={()=>setDirection(-1)}>←</button><button aria-label="Apuntar a la derecha" aria-pressed={direction===1} onClick={()=>setDirection(1)}>→</button></div><button className="team-fire" disabled={!myTurn||charging||power<=0} onClick={fire}>DISPARAR <small>{shotType==="special"?"SS":shotType==="dual"?"DUAL SHOT":"BALA 1"}</small></button></div>
+    <div className="team-aim"><label>Ángulo <b>{angle}°{angle>HIGH_ANGLE&&<em className="team-bonus"> +15%</em>}</b><input aria-label="Ángulo de disparo" type="range" min="18" max="78" value={angle} onChange={e=>setAngle(Number(e.target.value))}/></label><div className="team-direction"><button aria-label="Apuntar a la izquierda" aria-pressed={direction===-1} onClick={()=>setDirection(-1)}>←</button><button aria-label="Apuntar a la derecha" aria-pressed={direction===1} onClick={()=>setDirection(1)}>→</button></div><button className="team-fire" disabled={!myTurn||charging||power<=0} onClick={fire}>DISPARAR <small>{shotType==="special"?"SS":shotType==="dual"?"DUAL SHOT":"BALA 1"}</small></button></div>
     <div className="team-movement"><span>Caminar <b>{Math.max(0,TEAM_MOVE-mine.moved).toFixed(1)} m</b></span><button aria-label="Caminar a la izquierda" disabled={!myTurn||mine.moved>=TEAM_MOVE} onClick={()=>walk(-TEAM_STEP)}>←</button><button aria-label="Caminar a la derecha" disabled={!myTurn||mine.moved>=TEAM_MOVE} onClick={()=>walk(TEAM_STEP)}>→</button><small>Flechas: mover y apuntar · Espacio: cargar y disparar</small></div>
     <div className="team-items"><button className="team-ss" disabled={!myTurn||mine.specialUsed} aria-pressed={shotType==="special"} onClick={()=>setShotType(shotType==="special"?"basic":"special")}>SS <small>{mine.specialUsed?"Usado":"1 por partida"}</small></button><button disabled={!myTurn||mine.dualUsed} aria-pressed={shotType==="dual"} onClick={()=>setShotType(shotType==="dual"?"basic":"dual")}>DUAL SHOT <small>{mine.dualUsed?"Usado":"1 por partida"}</small></button><button disabled={!myTurn||mine.itemUsed||mine.hp>=160} onClick={()=>void act({type:"heal"})}>♥ CURA <small>+40 HP · fin de turno</small></button></div>
     <p className="team-friendly">Fuego amigo activo. El SS abre un cráter enorme y quema a todo el que esté cerca, incluido tu aliado.</p>

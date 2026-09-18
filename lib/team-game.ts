@@ -1,4 +1,4 @@
-import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, groundAt, stepProjectile, tornadoForTurn, type Crater} from "./battle.ts";
+import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, groundAt, stepProjectile, type Crater} from "./battle.ts";
 import {CHARACTER_ROSTER, isCharacterId, type CharacterId} from "./characters.ts";
 import {randomSceneIndex} from "./scenes.ts";
 
@@ -7,8 +7,15 @@ export const TEAM_WIDTH = DUEL_WIDTH * 1.3;
 export const TEAM_MOVE = DUEL_MOVE * 1.265;
 export const TEAM_STEP = 37.4;
 export const TURN_TIME = 10_000;
-/** El vortice del 2v2 empuja con menos de la mitad de la fuerza del duelo. */
-export const TORNADO_PULL = .45;
+/** El vortice del 2v2 empuja algo menos que el del duelo, pero se nota. */
+export const TORNADO_PULL = .62;
+/** El tornado se queda cuatro turnos seguidos: uno para cada jugador. */
+export const TORNADO_TURNS = 4;
+export const TORNADO_PERIOD = 8;
+/** Un tiro casi vertical es mas dificil de calcular y paga mejor. */
+export const HIGH_ANGLE = 70, HIGH_ANGLE_BONUS = 1.15;
+/** El viento aguanta al menos tres turnos antes de cambiar de lado. */
+export const WIND_HOLD = 3, WIND_EVERY = 4;
 /** Un color por equipo: A azul, B rojo. Los dos companeros comparten el mismo. */
 export const TEAM_COLORS = ["#3da5ff", "#ff4d61"] as const;
 export const COLORS = [TEAM_COLORS[0], TEAM_COLORS[1], TEAM_COLORS[0], TEAM_COLORS[1]] as const;
@@ -16,21 +23,44 @@ export const teamColor = (team:0|1) => TEAM_COLORS[team];
 /** El SS abre un crater mucho mas ancho y alcanza a todo el que este dentro. */
 export const BLAST = {basic:64, special:96};
 export const CRATER = {basic:15, special:32};
-export const DAMAGE = {basic:25, special:48};
+export const DAMAGE = {basic:25, special:58};
+/**
+ * El monumento del centro (Plaza San Martin, Faro de Miraflores) es solido: los
+ * proyectiles revientan contra el y nadie puede cruzarlo caminando. Las medidas
+ * siguen a las del dibujo en `team-game.css`, un poco mas angostas para que el
+ * choque nunca ocurra donde no se ve piedra.
+ */
+export const WALLS: Record<number,{x0:number;x1:number;height:number}> = {
+ 0: {x0:TEAM_WIDTH/2-52, x1:TEAM_WIDTH/2+52, height:150},
+ 1: {x0:TEAM_WIDTH/2-75, x1:TEAM_WIDTH/2+75, height:200},
+};
+export const wallFor = (scene:number) => WALLS[scene] ?? null;
 export type Player = {id:number; team:0|1; character:CharacterId; bot:boolean; x:number; hp:number; moved:number; turns:number; specialUsed:boolean; dualUsed:boolean; itemUsed:boolean; facing:1|-1};
 export type Point = {x:number;y:number};
-export type Shot = {path:Point[]; impact:Point; delay:number; damage:number[]; radius:number; special:boolean};
+export type Shot = {path:Point[]; impact:Point; delay:number; damage:number[]; radius:number; special:boolean; wall:boolean};
 export type TeamSignal = {id:string;from:number;to:number;kind:"ready"|"offer"|"answer"|"candidate"|"leave";payload?:string;at:number};
 export type TeamState = {
  version:2; players:Player[]; phase:"lobby"|"playing"|"ended"; scene:number; round:number; wins:[number,number];
- turn:number; turnNo:number; turnStartedAt:number; wind:number; seed:number; craters:Crater[]; winner:0|1|2|null;
+ turn:number; turnNo:number; turnStartedAt:number; wind:number; windSince:number; seed:number; craters:Crater[]; winner:0|1|2|null;
  event:{id:number;kind:string;at:number;player?:number;special?:boolean;shots?:Shot[];hpBefore?:number[];cratersBefore?:Crater[];duration?:number};
  chat:{player:number;text:string}[]; voice:TeamSignal[];
 };
 export type GameAction = {type:string; delta?:number; angle?:number;power?:number;direction?:number;special?:boolean;dual?:boolean;character?:unknown;text?:string};
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 export const teamGround=(x:number,craters:Crater[]=[],scene=0)=>groundAt(x/1.3,craters.map(c=>({x:c.x/1.3,r:c.r/1.3})),scene);
-export const teamTornado=(turnNo:number,seed:number)=>{const t=tornadoForTurn(turnNo,seed);return t?{...t,x:t.x*1.3,radius:t.radius*1.3}:null};
+/**
+ * El duelo 1v1 levanta el tornado dos turnos de cada seis. En el 2v2 son cuatro
+ * turnos de cada ocho, asi que la ronda entera lo sufre por igual. La posicion
+ * sale del mismo numero de ronda, de modo que todos ven el mismo vortice.
+ */
+export function teamTornado(turnNo:number,seed:number){
+ const cycle=Math.floor((turnNo-1)/TORNADO_PERIOD);
+ if(cycle<1||(turnNo-1)%TORNADO_PERIOD>=TORNADO_TURNS)return null;
+ let value=(seed^Math.imul(cycle,0x9e3779b9))>>>0;
+ value=Math.imul(value^(value>>>16),0x45d9f3b)>>>0;
+ value=(value^(value>>>16))>>>0;
+ return {x:220+(value/4294967296)*(TEAM_WIDTH-440),radius:64,spin:value%2?1:-1,cycle};
+}
 
 /** Four separated random positions on playable terrain; teams can start on either bank. */
 export function spawnPositions(random:()=>number=Math.random):number[]{
@@ -44,7 +74,7 @@ export function newTeamGame(now=Date.now(),random:()=>number=Math.random,previou
  return {version:2,players:xs.map((x,id)=>({id,team:(id%2) as 0|1,character:previous?.players[id].character??CHARACTER_ROSTER[id].id,bot:previous?.players[id].bot??id!==0,x,hp:160,moved:0,turns:0,
  // SS y Dual Shot duran toda la partida: solo vuelven cuando arranca una serie nueva.
  specialUsed:carry?carry.players[id].specialUsed:false,dualUsed:carry?carry.players[id].dualUsed:false,itemUsed:false,facing:x<TEAM_WIDTH/2?1:-1})),
- phase:previous?.phase==="lobby"?"lobby":"playing",scene:randomSceneIndex(previous?.scene,random),round:(previous?.round??0)+1,wins:carry?[...carry.wins]:[0,0],turn:0,turnNo:1,turnStartedAt:now,wind:Math.round(random()*28-14),seed:Math.floor(random()*2147483647),craters:[],winner:null,event:{id:(previous?.event.id??0)+1,kind:"start",at:now},chat:previous?.chat??[],voice:previous?.voice??[]};
+ phase:previous?.phase==="lobby"?"lobby":"playing",scene:randomSceneIndex(previous?.scene,random),round:(previous?.round??0)+1,wins:carry?[...carry.wins]:[0,0],turn:0,turnNo:1,turnStartedAt:now,wind:Math.round(random()*28-14)||7,windSince:1,seed:Math.floor(random()*2147483647),craters:[],winner:null,event:{id:(previous?.event.id??0)+1,kind:"start",at:now},chat:previous?.chat??[],voice:previous?.voice??[]};
 }
 
 export function nextPlayers(s:TeamState,count=3):number[]{
@@ -55,13 +85,21 @@ export function nextPlayers(s:TeamState,count=3):number[]{
 function advance(s:TeamState,now:number,pause=1500){
  s.players[s.turn].turns++;
  s.turn=nextPlayers(s,1)[0]??s.turn;s.turnNo++;s.players[s.turn].moved=0;s.turnStartedAt=now+pause;
- if((s.turnNo-1)%4===0)s.wind=Math.round(Math.sin(s.seed+s.turnNo)*14);
+ // El viento cambia cada cuatro turnos, pero nunca se da la vuelta antes de WIND_HOLD.
+ if((s.turnNo-1)%WIND_EVERY===0){
+  const next=Math.round(Math.sin(s.seed+s.turnNo)*14)||1;
+  const flips=Math.sign(next)!==Math.sign(s.wind);
+  if(flips&&s.turnNo-s.windSince<WIND_HOLD)s.wind=Math.abs(next)*Math.sign(s.wind||1);
+  else{s.wind=next;if(flips)s.windSince=s.turnNo}
+ }
 }
 
 export function moveTeamPlayer(s:TeamState,id:number,delta:number):number{
  const p=s.players[id],distance=Math.sign(delta)*Math.min(Math.abs(delta),TEAM_STEP,Math.max(0,TEAM_MOVE-p.moved));
  let x=clamp(p.x+distance,42,TEAM_WIDTH-42);
  if(s.scene===0||s.scene===4){const left=330*1.3,right=506*1.3;x=p.x<TEAM_WIDTH/2?Math.min(x,left):Math.max(x,right)}
+ const wall=wallFor(s.scene);
+ if(wall)x=p.x<TEAM_WIDTH/2?Math.min(x,wall.x0-24):Math.max(x,wall.x1+24);
  for(const other of s.players){if(other.id===id||other.hp<=0)continue;
   if(distance>0&&other.x>p.x&&x>other.x-48)x=Math.max(p.x,other.x-48);
   if(distance<0&&other.x<p.x&&x<other.x+48)x=Math.min(p.x,other.x+48);
@@ -70,21 +108,26 @@ export function moveTeamPlayer(s:TeamState,id:number,delta:number):number{
 }
 
 /** Everyone standing inside the blast is hit: shooter, ally and rivals alike. */
-export function blastDamage(s:TeamState,impact:Point,special:boolean):number[]{
- const radius=special?BLAST.special:BLAST.basic;
- return s.players.map(target=>target.hp>0&&Math.hypot(impact.x-target.x,impact.y-(teamGround(target.x,s.craters,s.scene)-25))<=radius?(special?DAMAGE.special:DAMAGE.basic):0);
+export const angleBonus=(angle:number)=>angle>HIGH_ANGLE?HIGH_ANGLE_BONUS:1;
+export function blastDamage(s:TeamState,impact:Point,special:boolean,bonus=1):number[]{
+ const radius=special?BLAST.special:BLAST.basic,hit=Math.round((special?DAMAGE.special:DAMAGE.basic)*bonus);
+ return s.players.map(target=>target.hp>0&&Math.hypot(impact.x-target.x,impact.y-(teamGround(target.x,s.craters,s.scene)-25))<=radius?hit:0);
 }
 
 /** Identical trajectory and collision output is used by server, bots and renderer. */
 export function simulateTeamShot(s:TeamState,id:number,angle:number,power:number,direction:number,special=false):Shot{
- const p=s.players[id],a=angle*Math.PI/180,path:Point[]=[],tornado=teamTornado(s.turnNo,s.seed);
- let x=p.x,y=teamGround(x,s.craters,s.scene)-47,dx=Math.cos(a)*power*.165*(direction<0?-1:1),dy=-Math.sin(a)*power*.165;
+ const p=s.players[id],a=angle*Math.PI/180,path:Point[]=[],tornado=teamTornado(s.turnNo,s.seed),wall=wallFor(s.scene);
+ const wallTop=wall?teamGround(TEAM_WIDTH/2,s.craters,s.scene)-wall.height:0;
+ let x=p.x,y=teamGround(x,s.craters,s.scene)-47,dx=Math.cos(a)*power*.165*(direction<0?-1:1),dy=-Math.sin(a)*power*.165,hitWall=false;
  for(let i=0;i<420;i++){
   ({x,y,dx,dy}=stepProjectile(x,y,dx,dy,s.wind,tornado,TORNADO_PULL));path.push({x,y});
+  if(wall&&x>=wall.x0&&x<=wall.x1&&y>=wallTop){hitWall=true;break}
   if(x<=4||x>=TEAM_WIDTH-4||y>=teamGround(x,s.craters,s.scene))break;
  }
- const impact={x:clamp(x,4,TEAM_WIDTH-4),y:Math.min(440,teamGround(clamp(x,4,TEAM_WIDTH-4),s.craters,s.scene))};
- return {path,impact,damage:blastDamage(s,impact,special),delay:0,radius:special?BLAST.special:BLAST.basic,special};
+ const landed=clamp(x,4,TEAM_WIDTH-4);
+ // Contra la muralla la explosion queda donde pego; en el suelo, sobre el terreno.
+ const impact=hitWall?{x:landed,y}:{x:landed,y:Math.min(440,teamGround(landed,s.craters,s.scene))};
+ return {path,impact,damage:blastDamage(s,impact,special,angleBonus(angle)),delay:0,radius:special?BLAST.special:BLAST.basic,special,wall:hitWall};
 }
 
 export function applyTeamAction(input:TeamState,id:number,action:GameAction,now=Date.now()):TeamState{
@@ -128,7 +171,7 @@ export function applyTeamAction(input:TeamState,id:number,action:GameAction,now=
  if(special)p.specialUsed=true;
  const duration=Math.ceil(Math.max(...shots.map(shot=>shot.path.length*1000/60+shot.delay))+600);
  s.event={id:s.event.id+1,kind:"fire",at:now,player:id,special,shots,hpBefore:s.players.map(t=>t.hp),cratersBefore:[...s.craters],duration};
- for(const shot of shots){s.players.forEach((target,i)=>{target.hp=Math.max(0,target.hp-shot.damage[i])});s.craters.push({x:shot.impact.x,r:shot.special?CRATER.special:CRATER.basic})}
+ for(const shot of shots){s.players.forEach((target,i)=>{target.hp=Math.max(0,target.hp-shot.damage[i])});if(!shot.wall)s.craters.push({x:shot.impact.x,r:shot.special?CRATER.special:CRATER.basic})}
  s.craters=s.craters.slice(-24);
  const alive=[0,1].map(team=>s.players.some(target=>target.team===team&&target.hp>0));
  if(!alive[0]||!alive[1]){s.winner=!alive[0]&&!alive[1]?2:alive[0]?0:1;s.phase="ended";if(s.winner!==2)s.wins[s.winner]++;s.turnStartedAt=now+duration}
@@ -148,7 +191,7 @@ export function chooseBotAction(s:TeamState):GameAction{
   const nearest=Math.min(...enemies.map(t=>Math.abs(t.x-shot.impact.x)));
   // La trayectoria no cambia con el SS: solo el radio, asi que se reutiliza el mismo vuelo.
   for(const special of p.specialUsed?[false]:[false,true]){
-   const damage=special?blastDamage(s,shot.impact,true):shot.damage;
+   const damage=special?blastDamage(s,shot.impact,true,angleBonus(angle)):shot.damage;
    const friendly=damage.reduce((sum,hit,i)=>sum+(s.players[i].team===p.team?hit:0),0);
    const enemy=damage.reduce((sum,hit,i)=>sum+(s.players[i].team!==p.team?hit:0),0);
    if(friendly===0){const score=enemy*20-nearest-(special?110:0);if(!clean||score>clean.score)clean={score,angle,power,direction,special}}

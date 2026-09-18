@@ -93,3 +93,36 @@ test("la portada manda las salas 1v1 viejas al duelo y declara los imports arrib
   assert.ok(home > lastImport, "el componente va despues de los imports, no entre ellos");
   assert.match(page, /location\.replace\(`\/duel\?room=\$\{encodeURIComponent\(oldRoom\)\}`\)/);
 });
+
+test("el hueco se abre en el instante del impacto, no al final de la animacion", () => {
+  assert.ok(ui.includes("const landedAt=(shot:{delay:number;path:unknown[]})=>shot.delay+shot.path.length*1000/60"));
+  assert.ok(ui.includes("filter(shot=>!shot.wall&&elapsed>=landedAt(shot))"), "cada disparo abre su crater al tocar el suelo");
+  assert.doesNotMatch(ui, /displayCraters=firing\?\(game\.event\.cratersBefore\?\?game\.craters\):game\.craters/);
+});
+
+test("el juego ofrece pantalla completa donde el navegador la soporta", () => {
+  assert.match(ui, /setCanFullscreen\(!!document\.fullscreenEnabled&&!!shell\.current\?\.requestFullscreen\)/);
+  assert.match(ui, /className="team-fullscreen"/);
+  assert.match(ui, /document\.addEventListener\("fullscreenchange",sync\)/);
+  assert.match(css, /\.team-app:fullscreen\{/);
+  assert.match(css, /\.team-app\.is-fullscreen \.team-stage\{height:clamp\(/);
+});
+
+test("el fondo sopla hacia el mismo lado que el viento", () => {
+  assert.match(ui, /className=\{`team-gusts \$\{game\.wind<0\?"left":"right"\}`\}/);
+  assert.match(ui, /"--gust":`\$\{Math\.max\(3\.2,9-Math\.abs\(game\.wind\)\*\.32\)\}s`/, "mas viento, rafagas mas rapidas");
+  assert.match(css, /@keyframes team-gust\{/);
+  assert.match(css, /@keyframes team-gust-left\{/);
+  assert.match(css, /\.team-gusts\.left i\{animation-name:team-gust-left\}/);
+});
+
+test("el monumento se dibuja como muralla solida", () => {
+  assert.match(ui, /\{wall&&<div className="team-wall"/);
+  assert.match(ui, /aria-label="Monumento: los disparos no lo atraviesan"/);
+  assert.match(css, /\.team-wall\{position:absolute/);
+});
+
+test("el bonus por angulo alto se ve en los controles", () => {
+  assert.match(ui, /angle>HIGH_ANGLE&&<em className="team-bonus"> \+15%<\/em>/);
+  assert.match(css, /\.team-bonus\{/);
+});
