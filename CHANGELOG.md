@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- El chat deja de flotar sobre los controles y pasa al flujo de la página en todas las pantallas; en celular horizontal, la selección de personaje y el HUD también se compactan para evitar cruces.
+- El jugador 2 puede entrar directamente desde el enlace compartido o usar un código de sala visible y fácil de copiar.
+- El chat ocupa menos espacio, conserva solo tres reacciones rápidas y limita el historial visible a los mensajes recientes.
+- Las salas 1v1 incluyen voz opcional entre navegadores, con permiso explícito de micrófono, estado de conexión, silencio y salida de voz.
 - Las reglas de impacto (radio de explosion, crater, radio del objetivo y dano del SS) viven una sola vez en `lib/battle.ts`; cliente y sala las importan, asi que ya no pueden quedar desincronizadas.
 - El hueco de Plaza San Miguel sigue la rasante real del terreno y muestra el canto del asfalto, la pared del fondo iluminada y sombra de contacto.
 - El aviso de la sala en la URL se agenda fuera del efecto de conexion: se acaba el error de lint por `setState` sincronico dentro del efecto.

@@ -38,15 +38,16 @@ export function tornadoForTurn(turnNo: number, seed: number): Tornado | null {
   return { x: 170 + (value / 4294967296)*(FIELD_WIDTH-340), radius: 48, spin: value%2 ? 1 : -1, cycle };
 }
 
-export function stepProjectile(x: number, y: number, dx: number, dy: number, wind: number, tornado: Tornado | null) {
+export function stepProjectile(x: number, y: number, dx: number, dy: number, wind: number, tornado: Tornado | null, pull = 1) {
   x += dx; y += dy; dy += .17; dx += wind*.0019;
   if (tornado) {
     const distance = Math.abs(x-tornado.x);
     if (distance < tornado.radius) {
-      const rotation = tornado.spin*.075*(1-distance/tornado.radius);
+      // `pull` suaviza el vortice sin cambiar su forma; el 2v2 lo usa a media fuerza.
+      const rotation = tornado.spin*.075*pull*(1-distance/tornado.radius);
       const cosine = Math.cos(rotation), sine = Math.sin(rotation), oldDx = dx;
       dx = oldDx*cosine-dy*sine;
-      dy = oldDx*sine+dy*cosine-.025;
+      dy = oldDx*sine+dy*cosine-.025*pull;
     }
   }
   return { x, y, dx, dy };
