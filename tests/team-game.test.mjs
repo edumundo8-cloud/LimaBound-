@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
-import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,BOT_MISS,botChance,teamRelief,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,BOT_MISS,botChance,teamRelief,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,wallHalfWidth,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
 import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
@@ -171,34 +171,48 @@ test("el tornado dura cuatro turnos seguidos, uno por jugador",()=>{
  for(const bloque of bloques)for(const turno of bloque)assert.deepEqual(teamTornado(turno,seed),teamTornado(bloque[0],seed));
  assert.notDeepEqual(teamTornado(bloques[0][0],seed),teamTornado(bloques[1]?.[0]??bloques[0][0],seed+1));
 });
-test("el monumento central es una muralla: frena disparos y pasos",()=>{
+test("el monumento central frena disparos solo donde tiene piedra",()=>{
  for(const scene of [0,1]){
   const wall=wallFor(scene);assert.ok(wall,`falta la muralla del escenario ${scene}`);
+  assert.equal(wall.profile.length,20,"la silueta se guarda en veinte tramos");
+  assert.ok(wall.profile.every(fraction=>fraction>0&&fraction<=1),"cada tramo ocupa una fraccion del medio ancho");
   const s=newTeamGame(1000,fixed);s.scene=scene;s.wind=0;
-  s.players[0].x=wall.x0-120;s.players[1].x=wall.x1+120;s.players[2].x=90;s.players[3].x=TEAM_WIDTH-90;
-  // Ninguna trayectoria puede seguir de largo dentro del monumento.
-  const techo=teamGround(TEAM_WIDTH/2,[],scene)-wall.height;
-  let choques=null;
-  for(const angle of [20,26,32,38,44,50,56])for(const power of [40,55,70,85,100]){
+  s.players[0].x=TEAM_WIDTH/2-wall.walk;s.players[1].x=TEAM_WIDTH/2+wall.walk;s.players[2].x=90;s.players[3].x=TEAM_WIDTH-90;
+  const base=teamGround(TEAM_WIDTH/2,[],scene),center=(wall.x0+wall.x1)/2;
+  let choques=null,libres=0;
+  for(const angle of [20,26,32,38,44,50,56,62,68,74])for(const power of [40,55,70,85,100]){
    const shot=simulateTeamShot(s,0,angle,power,1);
-   const dentro=shot.path.filter(point=>point.x>wall.x0&&point.x<wall.x1&&point.y>techo);
-   assert.ok(dentro.length<=1,`el proyectil atraveso el monumento (${angle}°, ${power}%)`);
+   // Ningun punto del vuelo puede quedar dentro de la piedra: el choque corta antes.
+   for(const point of shot.path.slice(0,-1))assert.ok(Math.abs(point.x-center)>wallHalfWidth(wall,base-point.y),`el proyectil entro en el monumento (${angle}°, ${power}%)`);
    if(shot.wall){
+    assert.ok(Math.abs(shot.impact.x-center)<=wallHalfWidth(wall,base-shot.impact.y)+1e-9,"la explosion queda pegada a la piedra");
     assert.ok(shot.impact.y<teamGround(shot.impact.x,s.craters,scene),"la explosion queda en la pared, no en el suelo");
     choques??={angle,power};
-   }
+   }else if(shot.impact.x>center)libres++;
   }
   assert.ok(choques,`ninguna trayectoria choco con el monumento del escenario ${scene}`);
-  // Y el impacto en la muralla no abre hueco en el terreno.
+  // Y sobre la silueta hay aire: el rectangulo viejo frenaba estos disparos.
+  assert.ok(libres>0,`el monumento del escenario ${scene} sigue tapando todo el ancho`);
+  // El impacto en la muralla no abre hueco en el terreno.
   const after=applyTeamAction(s,0,{type:"fire",angle:choques.angle,power:choques.power,direction:1},1001);
   assert.deepEqual(after.craters,[]);
-  // Caminar tampoco lo atraviesa.
-  s.players[0].x=wall.x0-10;
-  assert.ok(moveTeamPlayer(s,0,TEAM_STEP)<=wall.x0-24+.001);
-  s.players[1].x=wall.x1+10;
-  assert.ok(moveTeamPlayer(s,1,-TEAM_STEP)>=wall.x1+24-.001);
+  // Caminar no llega ni a rozar la piedra.
+  s.players[0].x=TEAM_WIDTH/2-wall.walk-10;
+  assert.ok(moveTeamPlayer(s,0,TEAM_STEP)<=TEAM_WIDTH/2-wall.walk+.001);
+  s.players[1].x=TEAM_WIDTH/2+wall.walk+10;
+  assert.ok(moveTeamPlayer(s,1,-TEAM_STEP)>=TEAM_WIDTH/2+wall.walk-.001);
+  assert.ok(wall.walk>=(wall.x1-wall.x0)/2,"nadie puede pararse dentro del monumento");
  }
  assert.equal(wallFor(2),null,"Gamarra no dibuja monumento, no lleva muralla");
+});
+test("la silueta del faro es mucho mas angosta que su altura",()=>{
+ const faro=wallFor(1),plaza=wallFor(0);
+ // El faro es una torre: el ancho del dibujo mandaba antes 150 unidades de aire.
+ assert.ok(faro.x1-faro.x0<60,"el faro dejo de ser un rectangulo ancho");
+ assert.equal(wallHalfWidth(faro,faro.height+1),0,"por encima de la punta no hay nada que chocar");
+ assert.equal(wallHalfWidth(faro,-1),0,"bajo tierra manda el terreno, no el monumento");
+ // La plaza es una piramide: arriba solo esta el jinete.
+ assert.ok(wallHalfWidth(plaza,plaza.height*.8)<wallHalfWidth(plaza,0)/2,"la estatua no bloquea como la base");
 });
 test("el viento aguanta al menos tres turnos antes de cambiar de lado",()=>{
  for(let seed=0;seed<40;seed++){

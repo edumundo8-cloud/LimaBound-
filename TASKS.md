@@ -1,5 +1,13 @@
 # Tareas de LimaBound
 
+## Silueta del monumento y piso limeño — 2026-09-18
+
+- Producción: compilación correcta. `npm test`: 99 pasan; siguen fallando solo las 2 pruebas heredadas (`cloudflare:` y `--tw-enter-opacity`), reproducidas antes de editar (96 pasaban).
+- `npm run lint`: el mismo error preexistente de `TeamGame.tsx:47` y 17 advertencias (una más: el ternario del dibujo del piso repite el estilo que ya usa `page.tsx` dos veces en la misma función).
+- Choque contra el monumento: pruebas nuevas comprueban que ningún punto del vuelo entra en la silueta, que el impacto queda pegado a la piedra sin abrir cráter y que por encima del faro y a los lados de la estatua ya pasa aire. Medido sobre una reja de 1044 disparos por escenario: en Plaza San Martín se liberan ~60% de los choques y en el faro ~110 disparos por posición.
+- Navegador local: partida con bots en los dos escenarios con monumento. La caja del dibujo coincide unidad por unidad con la caja de choque (medido en el DOM). Comprobado también el piso nuevo en el 2v2 (SVG) y en el duelo 1v1 (canvas), sin errores de consola.
+- Pendiente de ojo humano: en teléfono vertical el escenario entero se estira (fondo y terreno ya lo hacían); el monumento ahora se estira con ellos en vez de ser el único objeto sin deformar.
+
 ## Verificación de efectos — 2026-09-18
 
 - Producción: compilación correcta. `npm test`: 96 pasan; siguen fallando las 2 pruebas heredadas (`cloudflare:` y `--tw-enter-opacity`), también reproducidas antes de editar (94 pasaban).

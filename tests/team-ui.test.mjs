@@ -137,6 +137,32 @@ test("el bonus por angulo alto se ve en los controles", () => {
   assert.match(css, /\.team-bonus\{/);
 });
 
+test("el dibujo del monumento llena la caja de su silueta", () => {
+  // Si la imagen quedara mas chica que la caja de choque volveria la barrera
+  // invisible, asi que la pantalla la estira con las medidas de la fisica.
+  assert.ok(ui.includes("left:`${wall.x0/TEAM_WIDTH*100}%`"), "el dibujo empieza donde empieza la piedra");
+  assert.ok(ui.includes("width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`"), "y mide lo mismo que ella");
+  assert.ok(ui.includes("height:`${wall.height/3.9}%`"), "hasta la altura que frena los disparos");
+  assert.match(css, /\.team-landmark\{[^}]*object-fit:fill/, "el dibujo llena la caja, no se encoge dentro de ella");
+  assert.doesNotMatch(css, /\.team-landmark[^}]*object-fit:contain/);
+  assert.doesNotMatch(css, /\.team-landmark\.faro\{/, "el faro ya no lleva medidas propias en CSS");
+});
+
+test("el suelo lleva el dibujo limeno y no un gris plano", () => {
+  // Tres colores y nada mas: tierra de noche, arena y terracota.
+  assert.ok(ui.includes('<pattern id="team-ground-weave"'), "el tejido de rombos de la manta");
+  assert.ok(ui.includes('<pattern id="team-ground-greca"'), "la greca escalonada de los frisos");
+  assert.ok(ui.includes('fill="url(#team-ground-weave)"'), "el tejido cubre todo el terreno");
+  assert.ok(ui.includes('stroke="url(#team-ground-greca)"'), "la greca va en una cenefa");
+  assert.doesNotMatch(ui, /#595965/, "el gris plano del terreno quedo atras");
+  // La cenefa sigue el relieve: sale del mismo perfil, catorce unidades mas abajo.
+  assert.ok(ui.includes("const frieze=ground.map(point=>`${point.x},${point.y+14}`)"), "la cenefa nace del perfil del suelo");
+  assert.ok(ui.includes("points={frieze}"), "y se dibuja siguiendolo");
+  // Y el duelo 1v1 pinta el mismo piso sobre su canvas.
+  assert.ok(page.includes("weavePattern()") && page.includes("grecaPattern()"), "el duelo comparte los motivos");
+  assert.ok(page.includes("x.save();x.clip()"), "el dibujo se recorta con la silueta del terreno");
+});
+
 test("el monumento no lleva recuadro encima, solo su sombra en el suelo", () => {
   assert.match(css, /\.team-wall\{position:absolute;z-index:1;pointer-events:none;background:none;border:0\}/);
   assert.doesNotMatch(css, /\.team-wall\{[^}]*box-shadow:inset/);

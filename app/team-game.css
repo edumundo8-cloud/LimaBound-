@@ -137,8 +137,13 @@
 .team-aim-guide.waiting{opacity:.32;animation:none}
 @keyframes team-aim-pulse{50%{opacity:.55}}
 
-.team-landmark{position:absolute;z-index:3;left:50%;transform:translateX(-50%);width:15%;max-height:min(170px,42%);object-fit:contain;pointer-events:none}
-.team-landmark.faro{width:25%;max-height:min(215px,55%)}
+/*
+ * El monumento no se mide en CSS: `TeamGame.tsx` le pasa la caja de su silueta
+ * en unidades de campo, la misma que usa la fisica. Por eso llena la caja igual
+ * que el fondo y el terreno, sin `contain` ni topes propios: si el dibujo
+ * quedara mas chico que la caja, volveria la barrera invisible.
+ */
+.team-landmark{position:absolute;z-index:3;object-fit:fill;pointer-events:none}
 .team-fighter{position:absolute;z-index:4;width:clamp(42px,6.4vw,84px);height:clamp(46px,6.6vw,86px);transform:translateX(-50%);pointer-events:none;transition:left .2s ease,bottom .15s ease}
 .team-fighter img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 2px #0009);transition:transform .12s ease}
 /* Dos zancadas cortas mientras el personaje se desliza a su nueva posicion. */
@@ -307,5 +312,4 @@
  .team-social{margin:6px auto}
  .team-movement small{display:none}
  .team-chat [role=log]{height:70px}
- .team-landmark.faro{max-height:150px}
 }

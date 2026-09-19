@@ -102,7 +102,12 @@ export default function TeamGame(){
  const wall=wallFor(game.scene);
  // El paso dura lo mismo que el desplazamiento en CSS, asi que la zancada acompana al deslizamiento.
  const walking=(id:number)=>game.event.kind==="move"&&game.event.player===id&&elapsed<430;
- const terrain=Array.from({length:Math.ceil(TEAM_WIDTH/4)+1},(_,i)=>{const x=Math.min(TEAM_WIDTH,i*4);return `${x},${teamGround(x,displayCraters,game.scene)}`}).join(" ");
+ // El perfil se calcula una vez: de el salen la silueta del suelo y, catorce
+ // unidades mas abajo, la linea que lleva la cenefa. Asi la greca sigue el
+ // relieve en vez de cruzar el mapa recta.
+ const ground=Array.from({length:Math.ceil(TEAM_WIDTH/4)+1},(_,i)=>{const x=Math.min(TEAM_WIDTH,i*4);return {x,y:teamGround(x,displayCraters,game.scene)}});
+ const terrain=ground.map(point=>`${point.x},${point.y}`).join(" ");
+ const frieze=ground.map(point=>`${point.x},${point.y+14}`).join(" ");
  const aimGround=teamGround(mine.x,displayCraters,game.scene)-38,aimReach=54+power*.5,aim={x0:mine.x,y0:aimGround,x1:mine.x+Math.cos(angle*Math.PI/180)*aimReach*direction,y1:aimGround-Math.sin(angle*Math.PI/180)*aimReach};
  const remaining=Math.max(0,Math.ceil((game.turnStartedAt+TURN_TIME-clock)/1000)),next=nextPlayers(game),order=[game.turn,...next],ended=game.phase==="ended"&&!firing,tornado=firing?(game.event.tornado??null):teamTornado(game.turnNo,game.seed);
  return <main ref={shell} className={`team-app ${fullscreen?"is-fullscreen":""} ${game.phase==="lobby"?"is-lobby":"is-playing"}`} onPointerDown={unlockSound} onKeyDown={unlockSound}>
@@ -122,7 +127,17 @@ export default function TeamGame(){
      <img className="team-backdrop" src={scene.src} alt={`Escenario ${scene.label}`} fetchPriority="high"/>
      {/* Rafagas apenas visibles: solo marcan hacia donde empuja el viento. */}
      <div className={`team-gusts ${game.wind<0?"left":"right"}`} style={{"--gust":`${Math.max(2.6,7.4-Math.abs(game.wind)*.3)}s`} as CSSProperties} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/></div>
-     <svg className="team-terrain" viewBox={`0 0 ${TEAM_WIDTH} 390`} preserveAspectRatio="none" aria-hidden="true" style={{"--aim":COLORS[role]} as CSSProperties}><defs><linearGradient id="team-ground-fill" x2="0" y2="1"><stop stopColor="#595965"/><stop offset="1" stopColor="#151d30"/></linearGradient><marker id="team-aim-head" viewBox="0 0 12 12" refX="8.5" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1.5 1.5 L11 6 L1.5 10.5 L4.2 6 Z" fill="var(--aim,#fff)"/></marker></defs><polygon points={`0,450 ${terrain} ${TEAM_WIDTH},450`} fill="url(#team-ground-fill)"/><polyline points={terrain} fill="none" stroke="#e8d6ac" strokeWidth="3"/>
+     <svg className="team-terrain" viewBox={`0 0 ${TEAM_WIDTH} 390`} preserveAspectRatio="none" aria-hidden="true" style={{"--aim":COLORS[role]} as CSSProperties}><defs><linearGradient id="team-ground-fill" x2="0" y2="1"><stop stopColor="#4a4144"/><stop offset=".55" stopColor="#272637"/><stop offset="1" stopColor="#141a2b"/></linearGradient>
+      {/*
+       * El suelo dejo de ser un gris plano. Tres colores, ni uno mas: tierra de
+       * noche, arena y terracota. Debajo corre el tejido de rombos de una manta
+       * y, pegada a la superficie, una greca escalonada como la de los frisos de
+       * las huacas y los balcones limenos. Se ve poco a proposito: es piso, no
+       * decorado, y no debe competir con los personajes ni con la trayectoria.
+       */}
+      <pattern id="team-ground-weave" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M17 0 34 17 17 34 0 17Z" fill="none" stroke="#e8d6ac" strokeWidth=".9" opacity=".06"/><path d="M17 12 22 17 17 22 12 17Z" fill="#c9683f" opacity=".1"/></pattern>
+      <pattern id="team-ground-greca" width="44" height="24" patternUnits="userSpaceOnUse"><rect width="44" height="24" fill="#c9683f" opacity=".13"/><path d="M-2 18h9v-6h-5V6h14v12h9v-6h-5V6h14v12h10" fill="none" stroke="#e8d6ac" strokeWidth="2.1" opacity=".34"/></pattern>
+      <marker id="team-aim-head" viewBox="0 0 12 12" refX="8.5" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1.5 1.5 L11 6 L1.5 10.5 L4.2 6 Z" fill="var(--aim,#fff)"/></marker></defs><polygon points={`0,450 ${terrain} ${TEAM_WIDTH},450`} fill="url(#team-ground-fill)"/><polygon points={`0,450 ${terrain} ${TEAM_WIDTH},450`} fill="url(#team-ground-weave)"/><polyline points={frieze} fill="none" stroke="url(#team-ground-greca)" strokeWidth="22"/><polyline points={terrain} fill="none" stroke="#e8d6ac" strokeWidth="3"/>
       {aim&&mine.hp>0&&playing&&<g className={`team-aim-guide ${myTurn?"":"waiting"}`}><circle cx={aim.x0} cy={aim.y0} r="3.2" fill={COLORS[role]} opacity=".75"/><line x1={aim.x0} y1={aim.y0} x2={aim.x1} y2={aim.y1} stroke={COLORS[role]} strokeWidth="2.4" strokeLinecap="round" strokeDasharray="9 7" opacity=".8" markerEnd="url(#team-aim-head)"/></g>}
 
      </svg>
@@ -137,7 +152,8 @@ export default function TeamGame(){
      {tornado&&<TornadoVisual tornado={tornado} ground={teamGround(tornado.x,displayCraters,game.scene)} width={TEAM_WIDTH}/>}
      <CombatEffects event={game.event} elapsed={elapsed}/>
      {wall&&<div className="team-wall" style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}} aria-label="Monumento: los disparos no lo atraviesan"/>}
-     {(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}
+     {/* El dibujo llena justo la caja de la silueta: se ve exactamente lo que frena los disparos. */}
+     {wall&&(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}
      {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""} ${walking(p.id)?"walking":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}>{game.turn===p.id&&shownHP(p.id)>0&&<u className="team-turn-flag" aria-hidden="true"/>}<span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
      {/* Marcador y orden de turnos en una sola columna: libera todo el alto para el mapa. */}
      <aside className="team-board" aria-label="Jugadores, vida y orden de turnos">

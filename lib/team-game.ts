@@ -30,16 +30,54 @@ export const BLAST = {basic:64, special:96};
 export const CRATER = {basic:15*1.1, special:32*1.2};
 export const DAMAGE = {basic:25, special:52};
 /**
- * El monumento del centro (Plaza San Martin, Faro de Miraflores) es solido: los
- * proyectiles revientan contra el y nadie puede cruzarlo caminando. Las medidas
- * siguen a las del dibujo en `team-game.css`, un poco mas angostas para que el
- * choque nunca ocurra donde no se ve piedra.
+ * El monumento del centro (Plaza San Martin, Faro de Miraflores) es solido,
+ * pero solo donde hay piedra dibujada. Antes era un rectangulo y eso se sentia
+ * como una barrera invisible: el faro es una torre delgada y, aun asi, frenaba
+ * proyectiles en el aire vacio de los costados.
+ *
+ * Ahora cada monumento lleva su silueta. `x0`, `x1` y `height` son la caja
+ * exacta del dibujo y `profile` cuenta, de la base a la punta, que fraccion de
+ * ese medio ancho ocupa la piedra en cada tramo. Los numeros salen del canal
+ * alfa de `public/game/*.png`, y `TeamGame.tsx` estira la imagen dentro de esa
+ * misma caja: lo que se ve y lo que choca son la misma forma.
+ *
+ * `walk` va aparte a proposito. La silueta es mucho mas angosta que el
+ * rectangulo viejo, pero el paseo por el centro se queda como estaba para no
+ * mover el equilibrio del mapa junto con el arreglo del choque.
+ *
+ * El alto y el ancho de cada caja guardan la proporcion del PNG cuando el
+ * escenario se ve con la forma de su `viewBox`. El campo se estira igual que el
+ * fondo y que el terreno, asi que en pantallas mas chatas o mas altas el
+ * monumento se estira con ellos en vez de quedarse como el unico objeto sin
+ * deformar.
  */
-export const WALLS: Record<number,{x0:number;x1:number;height:number}> = {
- 0: {x0:TEAM_WIDTH/2-52, x1:TEAM_WIDTH/2+52, height:150},
- 1: {x0:TEAM_WIDTH/2-75, x1:TEAM_WIDTH/2+75, height:200},
+export type Wall = {x0:number; x1:number; height:number; walk:number; profile:readonly number[]};
+export const WALLS: Record<number,Wall> = {
+ 0: {x0:TEAM_WIDTH/2-90, x1:TEAM_WIDTH/2+90, height:140, walk:96,
+  profile:[1,.93,.8,.8,.75,.78,.72,.31,.32,.34,.23,.24,.28,.28,.26,.26,.27,.27,.28,.06]},
+ 1: {x0:TEAM_WIDTH/2-27, x1:TEAM_WIDTH/2+27, height:200, walk:99,
+  profile:[.99,.94,.94,.76,.75,.74,.72,.71,.69,.67,.66,.65,.64,.63,.72,.82,.83,.86,.77,.16]},
 };
 export const wallFor = (scene:number) => WALLS[scene] ?? null;
+/** Medio ancho de piedra a cierta altura sobre el suelo; 0 significa aire libre. */
+export function wallHalfWidth(wall:Wall,above:number):number{
+ if(!(above>=0)||above>wall.height)return 0;
+ const band=Math.min(wall.profile.length-1,Math.floor(above/wall.height*wall.profile.length));
+ return (wall.x1-wall.x0)/2*wall.profile[band];
+}
+/**
+ * Choque contra la silueta. El proyectil avanza a saltos y la torre del faro
+ * mide menos de 50 unidades de ancho, asi que el tramo entre dos posiciones se
+ * revisa de a seis unidades: sin eso un disparo rapido la cruzaria de largo.
+ */
+export function wallContact(wall:Wall,base:number,x0:number,y0:number,x1:number,y1:number):Point|null{
+ const center=(wall.x0+wall.x1)/2,steps=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)/6));
+ for(let i=1;i<=steps;i++){
+  const x=x0+(x1-x0)*i/steps,y=y0+(y1-y0)*i/steps;
+  if(Math.abs(x-center)<=wallHalfWidth(wall,base-y))return {x,y};
+ }
+ return null;
+}
 export type Player = {id:number; team:0|1; character:CharacterId; bot:boolean; x:number; hp:number; moved:number; turns:number; specialUsed:boolean; dualUsed:boolean; itemUsed:boolean; facing:1|-1};
 export type Point = {x:number;y:number};
 export type Shot = {path:Point[]; impact:Point; delay:number; damage:number[]; radius:number; special:boolean; wall:boolean};
@@ -114,7 +152,9 @@ export function moveTeamPlayer(s:TeamState,id:number,delta:number):number{
  let x=clamp(p.x+distance,42,TEAM_WIDTH-42);
  if(s.scene===0||s.scene===4){const left=330*1.3,right=506*1.3;x=p.x<TEAM_WIDTH/2?Math.min(x,left):Math.max(x,right)}
  const wall=wallFor(s.scene);
- if(wall)x=p.x<TEAM_WIDTH/2?Math.min(x,wall.x0-24):Math.max(x,wall.x1+24);
+ // Caminar respeta el recinto del monumento, no su silueta: nadie se mete entre
+ // las patas del caballo ni se pega a la puerta del faro.
+ if(wall)x=p.x<TEAM_WIDTH/2?Math.min(x,TEAM_WIDTH/2-wall.walk):Math.max(x,TEAM_WIDTH/2+wall.walk);
  for(const other of s.players){if(other.id===id||other.hp<=0)continue;
   if(distance>0&&other.x>p.x&&x>other.x-48)x=Math.max(p.x,other.x-48);
   if(distance<0&&other.x<p.x&&x<other.x+48)x=Math.min(p.x,other.x+48);
@@ -132,11 +172,15 @@ export function blastDamage(s:TeamState,impact:Point,special:boolean,bonus=1):nu
 /** Identical trajectory and collision output is used by server, bots and renderer. */
 export function simulateTeamShot(s:TeamState,id:number,angle:number,power:number,direction:number,special=false):Shot{
  const p=s.players[id],a=angle*Math.PI/180,path:Point[]=[],tornado=teamTornado(s.turnNo,s.seed),wall=wallFor(s.scene);
- const wallTop=wall?teamGround(TEAM_WIDTH/2,s.craters,s.scene)-wall.height:0;
+ const wallBase=wall?teamGround(TEAM_WIDTH/2,s.craters,s.scene):0;
  let x=p.x,y=teamGround(x,s.craters,s.scene)-47,dx=Math.cos(a)*power*SHOT_SPEED*(direction<0?-1:1),dy=-Math.sin(a)*power*SHOT_SPEED,hitWall=false;
  for(let i=0;i<420;i++){
-  ({x,y,dx,dy}=stepProjectile(x,y,dx,dy,s.wind,tornado,TORNADO_PULL));path.push({x,y});
-  if(wall&&x>=wall.x0&&x<=wall.x1&&y>=wallTop){hitWall=true;break}
+  const fromX=x,fromY=y;
+  ({x,y,dx,dy}=stepProjectile(x,y,dx,dy,s.wind,tornado,TORNADO_PULL));
+  // La piedra se revisa antes que el suelo: el pie del monumento es monumento.
+  const contact=wall?wallContact(wall,wallBase,fromX,fromY,x,y):null;
+  if(contact){x=contact.x;y=contact.y;path.push(contact);hitWall=true;break}
+  path.push({x,y});
   if(x<=4||x>=TEAM_WIDTH-4||y>=teamGround(x,s.craters,s.scene))break;
  }
  const landed=clamp(x,4,TEAM_WIDTH-4);
