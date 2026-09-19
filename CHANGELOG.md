@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Los bots apuntan algo peor: fallan a propósito cerca de cuatro de cada diez tiros en vez de tres, así que aciertan el 63% de las veces en lugar del 71% y pegan un 11% menos por disparo. La búsqueda de ángulo y el resto del comportamiento no cambian.
+- `app/TeamGame.tsx` declara sus cajas mutables antes del primer efecto que las lee. Solo cambia el orden, pero con eso desaparece el último error de lint del proyecto (`react-hooks/immutability`).
 - El monumento del centro ya no frena disparos en el aire vacío. Plaza San Martín y el Faro de Miraflores llevan ahora su silueta, sacada del alfa de sus ilustraciones, y la pantalla dibuja la imagen dentro de esa misma caja: el proyectil revienta solo donde se ve piedra. El paseo por el centro se mantiene igual que antes.
 - El suelo por donde caminan los personajes deja de ser gris plano. Lleva un dibujo limeño de tres colores —tierra de noche, arena y terracota— con el tejido de rombos de una manta al fondo y, pegada a la superficie, una greca escalonada que sigue el relieve. El 2v2 y el duelo 1v1 comparten los motivos.
 - Proyectiles con cuerpo iluminado orientado al vuelo, estela caliente que se disipa en humo y explosiones con fuego, polvo, chispas y fragmentos. 2v2 y duelo comparten el renderer, sin modificar trayectorias ni daño.

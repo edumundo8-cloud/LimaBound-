@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {DatabaseSync} from "node:sqlite";
-import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,BOT_MISS,botChance,teamRelief,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,wallHalfWidth,teamTornado,teamGround,angleBonus,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
+import {TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,SHOT_SPEED,BOT_MISS,botChance,teamRelief,COLORS,TEAM_COLORS,BLAST,CRATER,DAMAGE,HIGH_ANGLE,HIGH_ANGLE_BONUS,TORNADO_TURNS,TORNADO_PERIOD,WIND_HOLD,wallFor,wallHalfWidth,teamTornado,teamGround,angleBonus,blastDamage,newTeamGame,spawnPositions,nextPlayers,moveTeamPlayer,simulateTeamShot,applyTeamAction,tickTeamGame,chooseBotAction} from "../lib/team-game.ts";
 import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
@@ -260,8 +260,27 @@ test("el terreno del 2v2 tiene colinas mas pronunciadas que el del duelo",()=>{
  assert.notEqual(teamRelief(200,1),teamRelief(200,2),"cada mapa lleva su propio relieve");
 });
 
-test("los bots fallan a proposito casi un tercio de las veces",()=>{
- assert.equal(BOT_MISS,.3);
+test("el bot acierta bastante menos que un bot perfecto",()=>{
+ // Fija la dificultad: si alguien sube la punteria sin querer, esto lo canta.
+ const dano=miss=>{let total=0,tiros=0;
+  for(let semilla=0;semilla<600;semilla++){
+   const s=newTeamGame(1000,()=>(semilla*31%89)/89);
+   s.seed=semilla*7919;s.turnNo=1+semilla%9;s.wind=semilla%11-5;
+   s.players.forEach((p,i)=>{p.bot=true;p.x=95+i*235+semilla%40});
+   const accion=chooseBotAction(s,miss);if(accion.type!=="fire")continue;
+   const shot=simulateTeamShot(s,s.turn,accion.angle,accion.power,accion.direction);
+   const golpe=accion.special?blastDamage(s,shot.impact,true,angleBonus(accion.angle)):shot.damage;
+   total+=golpe.reduce((suma,hit,i)=>suma+(s.players[i].team!==s.players[s.turn].team?hit:0),0);tiros++;
+  }
+  return total/tiros;
+ };
+ const perfecto=dano(0),normal=dano(BOT_MISS);
+ assert.ok(normal<perfecto*.7,`el bot pega ${(normal/perfecto*100).toFixed(0)}% de lo que pegaria acertando siempre`);
+ assert.ok(normal>perfecto*.45,"tampoco puede volverse inofensivo");
+});
+
+test("los bots fallan a proposito casi cuatro de cada diez veces",()=>{
+ assert.equal(BOT_MISS,.38);
  let desviados=0,tiros=0;
  for(let semilla=0;semilla<220;semilla++){
   const s=newTeamGame(1000,()=>(semilla*31%89)/89);
@@ -278,7 +297,7 @@ test("los bots fallan a proposito casi un tercio de las veces",()=>{
   assert.equal(amigo,0,"fallar nunca puede convertirse en fuego amigo");
  }
  const proporcion=desviados/tiros;
- assert.ok(proporcion>.18&&proporcion<.45,`los bots desviaron el ${Math.round(proporcion*100)}% de ${tiros} tiros`);
+ assert.ok(proporcion>.26&&proporcion<.52,`los bots desviaron el ${Math.round(proporcion*100)}% de ${tiros} tiros`);
  // El azar depende de la ronda y del turno, asi que la sala y el cliente coinciden.
  const s=newTeamGame(1000,fixed);s.seed=4242;s.turnNo=5;
  assert.equal(botChance(s),botChance({...s}));

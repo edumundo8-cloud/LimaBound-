@@ -28,6 +28,11 @@ export default function TeamGame(){
  const [fullscreen,setFullscreen]=useState(false),[canFullscreen,setCanFullscreen]=useState(false);
  const shell=useRef<HTMLElement>(null);
  const sound=useRef<AudioContext|null>(null),lastSound=useRef(0);
+ // Las cajas mutables se declaran antes del primer efecto que las lee: el
+ // compilador de React no acepta que un valor ya usado dentro de un efecto se
+ // modifique mas abajo, y el reloj del servidor se escribe desde `applyRoom`.
+ const stateRef=useRef(game),revision=useRef(-1),clockOffset=useRef(0),chargeStart=useRef(0),chargeFrame=useRef(0),powerRef=useRef(0),roomRef=useRef(room),actionLock=useRef(false),chatInput=useRef<HTMLInputElement>(null);
+ const applyRoom=useCallback((result:RoomResult)=>{if(result.revision<revision.current)return;revision.current=result.revision;clockOffset.current=result.serverNow-Date.now();setGame(result.state);stateRef.current=result.state;setRole(result.role);setOccupied(result.occupied)},[]);
  const unlockSound=()=>{try{sound.current??=new AudioContext();if(sound.current.state==="suspended")void sound.current.resume()}catch{}};
  useEffect(()=>{const event=game.event;if(event.id===lastSound.current)return;lastSound.current=event.id;const audio=sound.current;if(!audio||audio.state!=="running")return;
   const tone=(frequency:number,delay=0)=>{const osc=audio.createOscillator(),gain=audio.createGain(),t=audio.currentTime+delay;osc.type="triangle";osc.frequency.setValueAtTime(frequency,t);osc.frequency.exponentialRampToValueAtTime(55,t+.25);gain.gain.setValueAtTime(.065,t);gain.gain.exponentialRampToValueAtTime(.001,t+.3);osc.connect(gain).connect(audio.destination);osc.start(t);osc.stop(t+.31)};
@@ -43,8 +48,6 @@ export default function TeamGame(){
   if(document.fullscreenElement)void document.exitFullscreen().catch(()=>{});
   else void shell.current?.requestFullscreen().catch(()=>setNotice("Tu navegador no dejó abrir la pantalla completa."));
  },[]);
- const stateRef=useRef(game),revision=useRef(-1),clockOffset=useRef(0),chargeStart=useRef(0),chargeFrame=useRef(0),powerRef=useRef(0),roomRef=useRef(room),actionLock=useRef(false),chatInput=useRef<HTMLInputElement>(null);
- const applyRoom=useCallback((result:RoomResult)=>{if(result.revision<revision.current)return;revision.current=result.revision;clockOffset.current=result.serverNow-Date.now();setGame(result.state);stateRef.current=result.state;setRole(result.role);setOccupied(result.occupied)},[]);
  useEffect(()=>{stateRef.current=game},[game]);
  useEffect(()=>{roomRef.current=room},[room]);
  const post=useCallback(async(type:string,extra:Record<string,unknown>={},code=roomRef.current)=>{

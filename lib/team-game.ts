@@ -17,8 +17,12 @@ export const TORNADO_TURNS = 4;
 export const TORNADO_PERIOD = 8;
 /** Un tiro casi vertical es mas dificil de calcular y paga mejor. */
 export const HIGH_ANGLE = 70, HIGH_ANGLE_BONUS = 1.15;
-/** Casi un tercio de los tiros de un bot sale desviado a proposito. */
-export const BOT_MISS = .3;
+/**
+ * Casi cuatro de cada diez tiros de un bot salen desviados a proposito. Subio
+ * desde 0.3: contra un bot que acertaba siete de cada diez veces la partida se
+ * hacia cuesta arriba, y este juego quiere ser accesible antes que exigente.
+ */
+export const BOT_MISS = .38;
 /** El viento aguanta al menos tres turnos antes de cambiar de lado. */
 export const WIND_HOLD = 3, WIND_EVERY = 4;
 /** Un color por equipo: A azul, B rojo. Los dos companeros comparten el mismo. */
