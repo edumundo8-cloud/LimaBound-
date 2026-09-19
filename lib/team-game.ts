@@ -1,4 +1,4 @@
-import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, groundAt, stepProjectile, type Crater} from "./battle.ts";
+import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, groundAt, stepProjectile, type Crater, type Tornado} from "./battle.ts";
 import {CHARACTER_ROSTER, isCharacterId, type CharacterId} from "./characters.ts";
 import {randomSceneIndex} from "./scenes.ts";
 
@@ -27,7 +27,7 @@ export const COLORS = [TEAM_COLORS[0], TEAM_COLORS[1], TEAM_COLORS[0], TEAM_COLO
 export const teamColor = (team:0|1) => TEAM_COLORS[team];
 /** El SS abre un crater mucho mas ancho y alcanza a todo el que este dentro. */
 export const BLAST = {basic:64, special:96};
-export const CRATER = {basic:15, special:32};
+export const CRATER = {basic:15*1.1, special:32*1.2};
 export const DAMAGE = {basic:25, special:52};
 /**
  * El monumento del centro (Plaza San Martin, Faro de Miraflores) es solido: los
@@ -47,7 +47,7 @@ export type TeamSignal = {id:string;from:number;to:number;kind:"ready"|"offer"|"
 export type TeamState = {
  version:2; players:Player[]; phase:"lobby"|"playing"|"ended"; scene:number; round:number; wins:[number,number];
  turn:number; turnNo:number; turnStartedAt:number; wind:number; windSince:number; seed:number; craters:Crater[]; winner:0|1|2|null;
- event:{id:number;kind:string;at:number;player?:number;special?:boolean;shots?:Shot[];hpBefore?:number[];cratersBefore?:Crater[];duration?:number};
+ event:{id:number;kind:string;at:number;player?:number;special?:boolean;shots?:Shot[];tornado?:Tornado|null;hpBefore?:number[];cratersBefore?:Crater[];duration?:number};
  chat:{player:number;text:string}[]; voice:TeamSignal[];
 };
 export type GameAction = {type:string; delta?:number; angle?:number;power?:number;direction?:number;special?:boolean;dual?:boolean;character?:unknown;text?:string};
@@ -185,7 +185,7 @@ export function applyTeamAction(input:TeamState,id:number,action:GameAction,now=
  if(dual){const second=simulateTeamShot(s,id,angle+2.5,power,p.facing);second.delay=900;shots.push(second);p.dualUsed=true}
  if(special)p.specialUsed=true;
  const duration=Math.ceil(Math.max(...shots.map(shot=>shot.path.length*1000/60+shot.delay))+600);
- s.event={id:s.event.id+1,kind:"fire",at:now,player:id,special,shots,hpBefore:s.players.map(t=>t.hp),cratersBefore:[...s.craters],duration};
+ s.event={id:s.event.id+1,kind:"fire",at:now,player:id,special,shots,tornado:teamTornado(s.turnNo,s.seed),hpBefore:s.players.map(t=>t.hp),cratersBefore:[...s.craters],duration};
  for(const shot of shots){s.players.forEach((target,i)=>{target.hp=Math.max(0,target.hp-shot.damage[i])});if(!shot.wall)s.craters.push({x:shot.impact.x,r:shot.special?CRATER.special:CRATER.basic})}
  s.craters=s.craters.slice(-24);
  const alive=[0,1].map(team=>s.players.some(target=>target.team===team&&target.hp>0));

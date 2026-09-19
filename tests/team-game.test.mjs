@@ -6,6 +6,33 @@ import {stepProjectile} from "../lib/battle.ts";
 import {handleTeamRoom} from "../lib/team-room.ts";
 const fixed=()=>.43;
 
+test("el cráter crece 10% en Bala 1 y Dual, 20% en SS, sin cambiar daño",()=>{
+ assert.equal(CRATER.basic,15*1.1);assert.equal(CRATER.special,32*1.2);
+ assert.deepEqual(DAMAGE,{basic:25,special:52});assert.deepEqual(BLAST,{basic:64,special:96});
+ for(const special of [false,true]){
+  const oldRadius=special?32:15,radius=special?CRATER.special:CRATER.basic,ratio=special?1.2:1.1;
+  const x=180,base=teamGround(x,[],2);
+  const oldDepth=teamGround(x,[{x,r:oldRadius}],2)-base,newDepth=teamGround(x,[{x,r:radius}],2)-base;
+  assert.ok(Math.abs(newDepth/oldDepth-ratio)<1e-10);
+  assert.equal(teamGround(x+radius+.1,[{x,r:radius}],2),teamGround(x+radius+.1,[],2));
+  const s=newTeamGame(1000,fixed);s.scene=2;s.players[0].x=x;
+  const after=applyTeamAction(s,0,{type:"fire",angle:48,power:40,direction:1,special,dual:!special},1001);
+  assert.equal(after.craters.length,special?1:2);
+  assert.ok(after.craters.every(c=>c.r===radius));
+ }
+});
+
+test("el disparo conserva el tornado al entrar y salir de sus cuatro turnos",()=>{
+ for(const turnNo of [8,9,12,13]){
+  const s=newTeamGame(1000,fixed);s.turnNo=turnNo;s.scene=2;
+  const weather=teamTornado(turnNo,s.seed);
+  const after=applyTeamAction(s,0,{type:"fire",angle:48,power:55,direction:1},1001);
+  assert.deepEqual(after.event.tornado,weather);
+  assert.deepEqual(JSON.parse(JSON.stringify(after)).event.tornado,weather,"las salas conservan el mismo clima al serializar");
+  assert.equal(after.turnNo,turnNo+1);
+ }
+});
+
 test("2v2: campo +30%, movimiento +26.5%, un color por equipo y posiciones seguras",()=>{
  assert.equal(TEAM_WIDTH,836*1.3);assert.equal(TEAM_MOVE,114.4*1.265);
  assert.deepEqual([...COLORS],[TEAM_COLORS[0],TEAM_COLORS[1],TEAM_COLORS[0],TEAM_COLORS[1]]);assert.notEqual(TEAM_COLORS[0],TEAM_COLORS[1]);

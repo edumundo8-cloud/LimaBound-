@@ -21,9 +21,9 @@ test("las reglas de impacto viven una sola vez, en lib/battle.ts", () => {
   assert.match(roomSource, /damagePerHit=shotDamage\(player,special\)/);
 });
 
-test("los valores siguen siendo los mismos que antes de unificarlos", () => {
+test("el daño se conserva y los cráteres crecen 10% y 20% para SS", () => {
   assert.deepEqual([blastRadius(0, false), blastRadius(1, false), blastRadius(0, true)], [40, 34, 50]);
-  assert.deepEqual([craterRadius(0, false), craterRadius(1, false), craterRadius(0, true)], [14, 12, 17]);
+  assert.deepEqual([craterRadius(0, false), craterRadius(1, false), craterRadius(0, true)], [14*1.1, 12*1.1, 17*1.2]);
   assert.deepEqual([targetRadiusFor(0), targetRadiusFor(1)], [24, 18]);
   assert.deepEqual([shotDamage(0, false), shotDamage(1, false), shotDamage(0, true), shotDamage(1, true)], [25, 25, 53, 44]);
 });

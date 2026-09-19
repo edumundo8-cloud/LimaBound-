@@ -33,14 +33,11 @@ test("la mira es una guia punteada con punta de flecha, no una linea gruesa", ()
   assert.match(ui, /aimReach=54\+power\*\.5/, "la mira crece con la potencia cargada");
 });
 
-test("el proyectil deja cola de cometa y el SS se dibuja distinto", () => {
-  assert.match(ui, /className=\{shot\.special\?"team-orb-ss":"team-orb"\}/);
-  assert.ok(ui.includes("const tail=shot.path.slice(Math.max(0,frame-(shot.special?22:16)),frame+1)"), "la cola son los ultimos puntos del vuelo");
-  assert.ok(ui.includes("const core=shot.path.slice(Math.max(0,frame-(shot.special?9:7)),frame+1)"), "y la parte reciente arde mas clara");
-  assert.match(ui, /<polyline points=\{tail\}[^>]*opacity="\.22"/);
-  assert.ok(ui.includes("const r=shot.radius*(.4+age*1.1)"), "el radio del impacto sale de las reglas");
-  assert.match(ui, /shot\.special&&<circle[^>]*r=\{r\*1\.95\}/, "el SS suma un tercer anillo");
-  assert.match(css, /\.team-orb-ss\{filter:drop-shadow/);
+test("el combate comparte efectos de trayectoria e impacto con el duelo", () => {
+  assert.ok(ui.includes('<CombatEffects event={game.event} elapsed={elapsed}'));
+  assert.ok(page.includes('drawProjectile'));
+  assert.ok(page.includes('drawExplosion'));
+  assert.match(css, /\.team-combat-effects\{[^}]*pointer-events:none/);
 });
 
 test("SS y Dual Shot se anuncian como un uso por partida", () => {
@@ -57,14 +54,9 @@ test("caminar apunta hacia donde caminas", () => {
   assert.doesNotMatch(ui, /act\(\{type:"move",delta:event\.key==="ArrowLeft"/);
 });
 
-test("el tornado del 2v2 tiene su propia animacion de embudo", () => {
-  assert.match(ui, /className=\{`team-tornado \$\{tornado\.spin<0\?"counterclockwise":""\}`\}/);
-  assert.match(css, /@keyframes team-tornado-sway/);
-  assert.match(css, /@keyframes team-debris/);
-  // El embudo se estrecha hacia abajo: cada anillo es mas angosto que el anterior.
-  const widths = [...css.matchAll(/\.team-tornado i:nth-child\(\d+\)\{top:[^;]+;width:(\d+)%/g)].map(m => Number(m[1]));
-  assert.ok(widths.length >= 8, "faltan anillos del embudo");
-  assert.deepEqual(widths, [...widths].sort((a, b) => b - a), "los anillos deben ir cerrandose");
+test("el tornado conserva el clima del disparo y toca el terreno", () => {
+  assert.ok(ui.includes('tornado=firing?(game.event.tornado??null)'));
+  assert.ok(ui.includes('<TornadoVisual tornado={tornado} ground={teamGround'));
 });
 
 test("el reloj sigue vivo aunque la pestana pase a segundo plano", () => {

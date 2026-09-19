@@ -6,6 +6,8 @@ import {CHARACTER_ROSTER,characterById,type CharacterId} from "@/lib/characters"
 import {SCENES} from "@/lib/scenes";
 import {COLORS,TEAM_COLORS,CRATER,HIGH_ANGLE,teamTornado,wallFor,TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,TURN_TIME,applyTeamAction,newTeamGame,nextPlayers,teamGround,tickTeamGame,type GameAction,type TeamState} from "@/lib/team-game";
 import "./team-game.css";
+import CombatEffects from "./CombatEffects";
+import TornadoVisual from "./TornadoVisual";
 import {useTeamVoice} from "./useTeamVoice";
 
 type RoomResult={code:string;role:number;state:TeamState;revision:number;occupied:boolean[];serverNow:number;error?:string};
@@ -102,7 +104,7 @@ export default function TeamGame(){
  const walking=(id:number)=>game.event.kind==="move"&&game.event.player===id&&elapsed<430;
  const terrain=Array.from({length:Math.ceil(TEAM_WIDTH/4)+1},(_,i)=>{const x=Math.min(TEAM_WIDTH,i*4);return `${x},${teamGround(x,displayCraters,game.scene)}`}).join(" ");
  const aimGround=teamGround(mine.x,displayCraters,game.scene)-38,aimReach=54+power*.5,aim={x0:mine.x,y0:aimGround,x1:mine.x+Math.cos(angle*Math.PI/180)*aimReach*direction,y1:aimGround-Math.sin(angle*Math.PI/180)*aimReach};
- const remaining=Math.max(0,Math.ceil((game.turnStartedAt+TURN_TIME-clock)/1000)),next=nextPlayers(game),order=[game.turn,...next],ended=game.phase==="ended"&&!firing,tornado=teamTornado(game.turnNo,game.seed);
+ const remaining=Math.max(0,Math.ceil((game.turnStartedAt+TURN_TIME-clock)/1000)),next=nextPlayers(game),order=[game.turn,...next],ended=game.phase==="ended"&&!firing,tornado=firing?(game.event.tornado??null):teamTornado(game.turnNo,game.seed);
  return <main ref={shell} className={`team-app ${fullscreen?"is-fullscreen":""} ${game.phase==="lobby"?"is-lobby":"is-playing"}`} onPointerDown={unlockSound} onKeyDown={unlockSound}>
   <header className="team-header"><Link href="/" className="team-brand">✦ LIMA BOUND <small>2 VS 2</small></Link><span>Equipo {mine.team===0?"A":"B"} · J{role+1}</span><Link href="/duel">Duelo 1v1</Link>{canFullscreen&&<button className="team-fullscreen" onClick={toggleFullscreen} aria-pressed={fullscreen}>{fullscreen?"⤡ Salir":"⛶ Pantalla completa"}</button>}{room&&<button onClick={share}>Invitar · {room}</button>}</header>
   {notice&&<p className="team-notice" role="status">{notice}</p>}
@@ -122,27 +124,7 @@ export default function TeamGame(){
      <div className={`team-gusts ${game.wind<0?"left":"right"}`} style={{"--gust":`${Math.max(2.6,7.4-Math.abs(game.wind)*.3)}s`} as CSSProperties} aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/></div>
      <svg className="team-terrain" viewBox={`0 0 ${TEAM_WIDTH} 390`} preserveAspectRatio="none" aria-hidden="true" style={{"--aim":COLORS[role]} as CSSProperties}><defs><linearGradient id="team-ground-fill" x2="0" y2="1"><stop stopColor="#595965"/><stop offset="1" stopColor="#151d30"/></linearGradient><marker id="team-aim-head" viewBox="0 0 12 12" refX="8.5" refY="6" markerWidth="6" markerHeight="6" orient="auto"><path d="M1.5 1.5 L11 6 L1.5 10.5 L4.2 6 Z" fill="var(--aim,#fff)"/></marker></defs><polygon points={`0,450 ${terrain} ${TEAM_WIDTH},450`} fill="url(#team-ground-fill)"/><polyline points={terrain} fill="none" stroke="#e8d6ac" strokeWidth="3"/>
       {aim&&mine.hp>0&&playing&&<g className={`team-aim-guide ${myTurn?"":"waiting"}`}><circle cx={aim.x0} cy={aim.y0} r="3.2" fill={COLORS[role]} opacity=".75"/><line x1={aim.x0} y1={aim.y0} x2={aim.x1} y2={aim.y1} stroke={COLORS[role]} strokeWidth="2.4" strokeLinecap="round" strokeDasharray="9 7" opacity=".8" markerEnd="url(#team-aim-head)"/></g>}
-      {firing&&game.event.shots?.map((shot,i)=>{
-       const frame=Math.floor((elapsed-shot.delay)*60/1000),point=shot.path[Math.min(frame,shot.path.length-1)],color=COLORS[game.event.player??0];
-       if(frame<0||!point)return null;
-       if(frame<shot.path.length){
-        // Cola de cometa: la parte vieja se apaga y la reciente arde blanca.
-        const tail=shot.path.slice(Math.max(0,frame-(shot.special?22:16)),frame+1).map(p=>`${p.x},${p.y}`).join(" ");
-        const core=shot.path.slice(Math.max(0,frame-(shot.special?9:7)),frame+1).map(p=>`${p.x},${p.y}`).join(" ");
-        return <g key={i} className={shot.special?"team-orb-ss":"team-orb"}>
-         <polyline points={tail} fill="none" stroke={color} strokeWidth={shot.special?9:6} strokeLinecap="round" strokeLinejoin="round" opacity=".22"/>
-         <polyline points={core} fill="none" stroke={shot.special?"#ffe9a1":"#fff6bc"} strokeWidth={shot.special?4:2.6} strokeLinecap="round" strokeLinejoin="round" opacity=".7"/>
-         {shot.special&&<circle cx={point.x} cy={point.y} r="19" fill={color} opacity=".2"/>}
-         {shot.special&&<circle cx={point.x} cy={point.y} r="11" fill="#ffe9a1" opacity=".85"/>}
-         <circle cx={point.x} cy={point.y} r={shot.special?6:7} fill={shot.special?color:color} stroke="#fff" strokeWidth="2"/>
-        </g>;
-       }
-       // El SS abre una onda triple y dorada; el disparo normal, un destello corto.
-       const age=(frame-shot.path.length)/(shot.special?46:30),fade=Math.max(0,1-age);
-       if(fade<=0)return null;
-       const r=shot.radius*(.4+age*1.1);
-       return <g key={i}><circle cx={shot.impact.x} cy={shot.impact.y} r={r} fill={shot.special?"#ffd76a":color} opacity={fade*(shot.special?.7:.55)}/><circle cx={shot.impact.x} cy={shot.impact.y} r={r*1.3} fill="none" stroke={shot.special?"#fff3c4":"#fff6bc"} strokeWidth={shot.special?7:3} opacity={fade}/>{shot.special&&<circle cx={shot.impact.x} cy={shot.impact.y} r={r*1.95} fill="none" stroke={color} strokeWidth="3" opacity={fade*.5}/>}</g>;
-      })}
+
      </svg>
      {/* Cronometro y viento comparten el centro de arriba: es donde miran todos. */}
      <div className="team-hud">
@@ -152,7 +134,8 @@ export default function TeamGame(){
       </div>
       <div className={`team-wind ${game.wind<0?"left":"right"}`} aria-label={`Viento ${Math.abs(game.wind)} hacia ${game.wind<0?"la izquierda":"la derecha"}`}><b>VIENTO</b><i>{game.wind<0?"←":"→"}</i><em>{Math.abs(game.wind)}</em></div>
      </div>
-     {tornado&&<div className={`team-tornado ${tornado.spin<0?"counterclockwise":""}`} style={{left:`${tornado.x/TEAM_WIDTH*100}%`,width:`${tornado.radius*2/TEAM_WIDTH*100}%`}} aria-label="Tornado: desvía un poco los disparos"><u/><i/><i/><i/><i/><i/><i/><i/><i/><b/><b/><b/><span>TORNADO</span></div>}
+     {tornado&&<TornadoVisual tornado={tornado} ground={teamGround(tornado.x,displayCraters,game.scene)} width={TEAM_WIDTH}/>}
+     <CombatEffects event={game.event} elapsed={elapsed}/>
      {wall&&<div className="team-wall" style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}} aria-label="Monumento: los disparos no lo atraviesan"/>}
      {(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}
      {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""} ${walking(p.id)?"walking":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}>{game.turn===p.id&&shownHP(p.id)>0&&<u className="team-turn-flag" aria-hidden="true"/>}<span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}

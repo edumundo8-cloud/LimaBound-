@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Proyectiles con cuerpo iluminado orientado al vuelo, estela caliente que se disipa en humo y explosiones con fuego, polvo, chispas y fragmentos. 2v2 y duelo comparten el renderer, sin modificar trayectorias ni daño.
+- Cráteres de Bala 1 y Dual Shot un 10% más anchos y profundos; SS un 20%, tanto en práctica como en salas.
+- Tornado con vapor sombreado, embudo visual 15% más estrecho y polvo apoyado en el terreno. La fuerza y duración permanecen iguales; el 2v2 conserva el tornado del disparo hasta finalizar su animación.
+
 - El chat deja de flotar sobre los controles y pasa al flujo de la página en todas las pantallas; en celular horizontal, la selección de personaje y el HUD también se compactan para evitar cruces.
 - El jugador 2 puede entrar directamente desde el enlace compartido o usar un código de sala visible y fácil de copiar.
 - El chat ocupa menos espacio, conserva solo tres reacciones rápidas y limita el historial visible a los mensajes recientes.

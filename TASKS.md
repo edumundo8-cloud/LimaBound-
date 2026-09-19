@@ -1,5 +1,13 @@
 # Tareas de LimaBound
 
+## Verificación de efectos — 2026-09-18
+
+- Producción: compilación correcta. `npm test`: 96 pasan; siguen fallando las 2 pruebas heredadas (`cloudflare:` y `--tw-enter-opacity`), también reproducidas antes de editar (94 pasaban).
+- `npm run lint`: 1 error preexistente en `TeamGame.tsx` (`react-hooks/immutability`, `clockOffset`) y 16 advertencias. El error se confirmó sobre el archivo original de Claude. No hay errores nuevos en los efectos.
+- Nuevas regresiones: tamaño y profundidad del cráter, Bala 1/Dual/SS, daño sin cambios y tornado guardado al comenzar/terminar su ciclo. Las pruebas existentes cubren series completas, colisiones, bots y salas.
+- API HTTP local: crear sala, segundo jugador, empezar, disparar SS y consultar desde ambos jugadores; trayectoria, cráteres y tornado coinciden.
+- Navegador local: partida con bots, caminar, cargar y disparar; escritorio y teléfono vertical 390×844. Inspección visual de fotogramas de proyectil, explosión y tornado. No sustituye una partida en dos teléfonos físicos.
+
 ## Próximo ciclo
 
 - [ ] Corregir los 2 tests heredados del starter que fallan por `cloudflare:` y utilidades de animación de Tailwind.
