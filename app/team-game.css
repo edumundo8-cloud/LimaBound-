@@ -1,0 +1,315 @@
+/*
+ * Pantalla del 2v2. Un solo color por equipo (A azul, B rojo) y una escala que
+ * funciona igual en un telefono vertical, en un telefono acostado y en un
+ * monitor: todo lo que crece usa clamp() en vez de saltos por media query.
+ */
+.team-app{--team-a:#3da5ff;--team-b:#ff4d61;--ink:#edf5ff;--panel:#172940;--line:#ffffff25;min-height:100dvh;padding:clamp(6px,1.4vw,14px) max(clamp(6px,1.4vw,14px),env(safe-area-inset-right)) calc(clamp(6px,1.4vw,14px) + env(safe-area-inset-bottom)) max(clamp(6px,1.4vw,14px),env(safe-area-inset-left));background:radial-gradient(circle at 80% 0,#3e3975,transparent 44%),#111d33;color:var(--ink);font-family:"Trebuchet MS",Arial,sans-serif}
+.team-app button,.team-app input{font:inherit}
+.team-app button{min-height:42px;border:1px solid #ffffff30;border-radius:11px;padding:8px 14px;background:#263e60;color:#f3f7ff;font-weight:700;cursor:pointer;touch-action:manipulation}
+.team-app button:disabled{opacity:.4;cursor:not-allowed}
+.team-app button[aria-pressed=true]{border-color:#8ce8b9;background:#245844;box-shadow:0 0 0 2px #8ce8b929}
+.team-app a{color:#bfeaff}
+.team-app .team-primary{background:#77e3ae;color:#133c2a;border-color:#a4ffcb}
+.team-shell,.team-header,.team-field,.team-controls,.team-social,.team-result{max-width:1300px;margin-left:auto;margin-right:auto}
+/*
+ * En partida la pantalla es una sola: columna de alto fijo, sin scroll, con el
+ * campo quedandose todo el espacio que sobra. La sala de espera si puede crecer.
+ */
+.team-app.is-lobby{min-height:100dvh}
+.team-app.is-playing{height:100dvh;overflow:hidden;display:flex;flex-direction:column;gap:4px;padding:5px max(5px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left))}
+/* Nada de barras negras a los lados: en partida el mapa ocupa todo el ancho. */
+.team-app.is-playing .team-field{max-width:none;border-width:1px;border-radius:12px}
+.team-app.is-playing .team-header{margin-bottom:0}
+.team-app.is-playing .team-social{gap:6px}
+.team-app.is-playing .team-social button{min-height:32px;padding:5px 11px}
+/* Los margenes automaticos anulan el estirado del flex: hay que pedir el ancho. */
+.team-app.is-playing>*{flex:0 0 auto;width:100%}
+.team-app.is-playing .team-chat,.team-app.is-playing .team-lobby{width:auto}
+/*
+ * Con la barra de carga ocupando su propia fila, el resto entra en una sola:
+ * columnas mas anchas para que el boton de disparo no baje de linea.
+ */
+.team-app.is-playing .team-controls{gap:7px 14px;padding:8px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.team-app.is-playing .team-items{grid-column:auto}
+.team-app.is-playing .team-field{flex:1 1 auto;min-height:90px;display:flex;margin-top:0;margin-bottom:0}
+.team-app.is-playing .team-stage{flex:1;height:auto;min-height:0}
+.team-app.is-playing .team-controls,.team-app.is-playing .team-social,.team-app.is-playing .team-result{margin-top:0;margin-bottom:0}
+.team-app.is-playing .team-notice{margin:0 auto}
+/* Con el alto contado, el chat flota sobre el campo en vez de empujarlo. */
+.team-app.is-playing .team-chat{position:fixed;right:12px;bottom:12px;z-index:20;width:min(340px,92vw);margin:0;box-shadow:0 14px 40px #0009}
+.team-header{margin-bottom:10px;display:flex;align-items:center;gap:clamp(7px,1.4vw,16px);flex-wrap:wrap;font-size:13px}
+.team-header>span{margin-left:auto}
+.team-brand{font-weight:900;font-size:clamp(16px,3.4vw,20px);text-decoration:none;color:#fff!important}
+.team-brand small{margin-left:7px;font-size:11px;color:#82e6b2}
+.team-header>a:not(.team-brand){font-size:12px}
+.team-app .team-fullscreen{min-height:32px;padding:5px 10px;font-size:12px}
+/* En pantalla completa el fondo negro del navegador se rellena y el mapa crece. */
+/* Pantalla completa de verdad: sin topes de ancho y con el borde al minimo. */
+.team-app:fullscreen{padding:4px}
+.team-app.is-fullscreen .team-field,.team-app.is-fullscreen .team-controls,.team-app.is-fullscreen .team-social,.team-app.is-fullscreen .team-header,.team-app.is-fullscreen .team-result{max-width:none}
+.team-app.is-fullscreen .team-field{border-radius:10px}
+.team-notice{max-width:900px;margin:8px auto;padding:10px;background:#243d50;border-radius:10px;font-size:14px;text-align:center}
+
+/* --- Sala de espera --- */
+.team-lobby{max-width:1000px;margin:clamp(10px,2vw,25px) auto;padding:clamp(13px,2.4vw,24px);border:1px solid var(--line);border-radius:22px;background:#17283fe8;text-align:center;box-shadow:0 20px 70px #050b1b80}
+.team-lobby-title small{color:#80e9b6;letter-spacing:.18em;font-size:12px}
+.team-lobby h1{font-size:clamp(24px,5.5vw,36px);margin:8px 0}
+.team-lobby p{color:#b9cce3;font-size:clamp(12px,2.6vw,15px)}
+.team-characters{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:9px;margin:clamp(14px,2.4vw,24px) 0}
+.team-characters button{min-width:0;padding:7px}
+.team-characters img{display:block;width:100%;height:clamp(78px,14vw,130px);object-fit:contain;border-radius:9px;background:radial-gradient(circle,#e9f8ff,#9abacb)}
+.team-characters span{display:block;margin-top:8px;font-size:clamp(11px,2.3vw,13px)}
+.team-start-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.team-start-actions button{min-height:48px}
+.team-join{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-top:20px}
+.team-join input,.team-chat input{min-width:0;border:1px solid #ffffff40;border-radius:10px;padding:10px;color:white;background:#0f1e33;font-size:16px}
+.team-join input{letter-spacing:.15em;width:170px;text-align:center}
+.team-lobby-seats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.team-lobby-seats article{border-top:3px solid var(--player-color);background:#0c1d32;padding:12px 6px;border-radius:10px}
+.team-lobby-seats b{color:var(--player-color)}
+.team-lobby-seats b,.team-lobby-seats span,.team-lobby-seats small{display:block;margin:4px 0;font-size:13px}
+.team-lobby-seats small{font-size:11px;color:#a8bed9}
+.team-lobby-voice{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.team-lobby-voice small{flex-basis:100%;color:#a8bed9;font-size:11px}
+.team-lobby-voice p{flex-basis:100%;margin:6px 0 0;color:#ffd9a2;font-size:12px}
+
+/* --- Marcador + orden de turnos: una sola columna en la esquina del campo --- */
+.team-board{position:absolute;z-index:6;top:6px;left:6px;width:clamp(112px,15%,186px);padding:5px 6px 6px;border:1px solid #ffffff1f;border-radius:12px;background:#06111ec9;backdrop-filter:blur(4px);font-size:clamp(9px,1.4vw,11px);line-height:1.25;pointer-events:none}
+.team-board header{display:flex;justify-content:space-between;gap:5px;color:#95aecd;font-size:9px}
+.team-board header b{color:#fff;letter-spacing:.06em}
+.team-board header span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.team-board-turn{display:block;margin:2px 0 5px;color:#9de8bd;font-size:clamp(10px,1.6vw,12px)}
+.team-board ol{display:grid;gap:3px;margin:0;padding:0;list-style:none}
+.team-board li{display:flex;align-items:center;gap:5px;padding:2px 4px;border-radius:7px;border-left:3px solid var(--player-color);background:#ffffff0d}
+.team-board li.current{background:color-mix(in srgb,var(--player-color) 26%,transparent);box-shadow:0 0 0 1px var(--player-color)}
+.team-board li.down{opacity:.4}
+.team-board li>i{font-style:normal;width:9px;color:var(--player-color);font-weight:bold;text-align:center}
+.team-board li>div{flex:1;min-width:0}
+.team-board li b{display:block;color:var(--player-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-board meter{width:100%;height:5px;accent-color:var(--player-color)}
+.team-board li>em{font-style:normal;font-variant-numeric:tabular-nums;color:#dce8f7}
+.team-board footer{margin-top:5px;padding-top:4px;border-top:1px solid #ffffff1a;text-align:center;font-weight:bold}
+/* --- Marcador de los cuatro jugadores (sala de espera) --- */
+.team-roster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(4px,.8vw,8px)}
+.team-roster article{min-width:0;display:flex;gap:8px;align-items:center;border:1px solid #ffffff22;border-left:4px solid var(--player-color);border-radius:12px;padding:7px;background:linear-gradient(90deg,color-mix(in srgb,var(--player-color) 16%,#13253e),#13253e 60%)}
+.team-roster article.current{box-shadow:0 0 0 2px var(--player-color)}
+.team-roster article.eliminated{opacity:.45}
+.team-roster img{width:clamp(30px,4vw,48px);height:clamp(30px,4vw,48px);object-fit:contain;background:#cde5f3;border-radius:8px}
+.team-roster article>div{min-width:0;flex:1}
+.team-roster b{font-size:clamp(9px,1.5vw,12px);color:var(--player-color)}
+.team-roster span{display:block;font-size:clamp(9px,1.5vw,12px);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.team-roster meter{display:inline-block;width:calc(100% - 55px);height:9px;accent-color:var(--player-color)}
+.team-roster small{font-size:10px;padding-left:4px}
+.team-arena-heading{margin:10px auto 6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:clamp(10px,2vw,12px)}
+.team-arena-heading strong{color:#9de8bd;font-size:clamp(11px,2.2vw,13px)}
+
+/* --- Campo --- */
+.team-field{border:2px solid #8aa7c8;border-radius:18px;background:#111d32;overflow:hidden;box-shadow:0 13px 38px #0005}
+.team-stage{height:clamp(215px,30vw + 60px,420px);position:relative;overflow:hidden}
+.team-backdrop,.team-terrain{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+/*
+ * Rafagas: lineas finisimas que cruzan el fondo hacia donde sopla el viento. La
+ * duracion llega desde la interfaz (--gust): a mas viento, mas rapido cruzan.
+ */
+.team-gusts{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.team-gusts i{position:absolute;height:1.5px;width:22%;border-radius:2px;background:linear-gradient(90deg,transparent,#f1f9ff8c,transparent);opacity:0;animation:team-gust var(--gust,7s) linear infinite}
+.team-gusts.left i{animation-name:team-gust-left}
+.team-gusts i:nth-child(1){top:14%;width:26%;animation-delay:-.4s}
+.team-gusts i:nth-child(2){top:27%;width:17%;animation-delay:-2.1s;opacity:0}
+.team-gusts i:nth-child(3){top:38%;width:30%;animation-delay:-3.6s}
+.team-gusts i:nth-child(4){top:49%;width:20%;animation-delay:-1.3s}
+.team-gusts i:nth-child(5){top:60%;width:24%;animation-delay:-4.7s}
+.team-gusts i:nth-child(6){top:70%;width:15%;animation-delay:-5.9s}
+.team-gusts i:nth-child(7){top:20%;width:19%;animation-delay:-3.1s}
+.team-gusts i:nth-child(8){top:66%;width:27%;animation-delay:-.9s}
+@keyframes team-gust{0%{transform:translateX(-120%);opacity:0}10%{opacity:.75}78%{opacity:.5}100%{transform:translateX(520%);opacity:0}}
+@keyframes team-gust-left{0%{transform:translateX(520%);opacity:0}10%{opacity:.75}78%{opacity:.5}100%{transform:translateX(-120%);opacity:0}}
+/*
+ * El monumento del centro es solido, pero eso lo cuenta el dibujo, no un
+ * recuadro encima: la muralla solo apoya una sombra difusa en el suelo para que
+ * el monumento se vea plantado.
+ */
+.team-wall{position:absolute;z-index:1;pointer-events:none;background:none;border:0}
+.team-wall:after{content:"";position:absolute;left:-14%;right:-14%;bottom:-5px;height:13px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,#03070f73,#03070f2e 58%,transparent 74%);filter:blur(2px)}
+.team-terrain{z-index:2}
+.team-aim-guide{animation:team-aim-pulse 1.5s ease-in-out infinite}
+/* Puedes preparar el angulo mientras esperas: la guia se ve, pero apagada. */
+.team-aim-guide.waiting{opacity:.32;animation:none}
+@keyframes team-aim-pulse{50%{opacity:.55}}
+
+/*
+ * El monumento no se mide en CSS: `TeamGame.tsx` le pasa la caja de su silueta
+ * en unidades de campo, la misma que usa la fisica. Por eso llena la caja igual
+ * que el fondo y el terreno, sin `contain` ni topes propios: si el dibujo
+ * quedara mas chico que la caja, volveria la barrera invisible.
+ */
+.team-landmark{position:absolute;z-index:3;object-fit:fill;pointer-events:none}
+.team-fighter{position:absolute;z-index:4;width:clamp(42px,6.4vw,84px);height:clamp(46px,6.6vw,86px);transform:translateX(-50%);pointer-events:none;transition:left .2s ease,bottom .15s ease}
+.team-fighter img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 2px #0009);transition:transform .12s ease}
+/* Dos zancadas cortas mientras el personaje se desliza a su nueva posicion. */
+.team-fighter.walking img{animation:team-step .21s ease-in-out 2}
+@keyframes team-step{25%{transform:translateY(-4px) rotate(-2.5deg)}55%{transform:translateY(0) rotate(1.5deg)}80%{transform:translateY(-2px) rotate(-1deg)}}
+.team-fighter.walking>span{animation:team-step-label .42s ease-in-out}
+@keyframes team-step-label{50%{transform:translateX(-50%) translateY(-3px)}}
+.team-fighter>span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;white-space:nowrap;color:var(--player-color);background:#0a172deb;padding:2px 5px;border:1px solid var(--player-color);border-radius:6px;font-size:clamp(9px,1.6vw,11px);font-weight:bold}
+.team-fighter>span i{font-style:normal;background:var(--player-color);color:#06111f;border-radius:4px;padding:0 3px}
+.team-fighter.active>span{box-shadow:0 0 12px var(--player-color)}
+/* Flecha que rebota sobre quien esta jugando ahora mismo. */
+.team-turn-flag{position:absolute;left:50%;bottom:calc(100% + clamp(15px,2.6vw,21px));width:0;height:0;margin-left:-7px;border:7px solid transparent;border-top:9px solid var(--player-color);filter:drop-shadow(0 2px 4px #000a);animation:team-turn-flag .9s ease-in-out infinite}
+@keyframes team-turn-flag{50%{transform:translateY(-5px)}}
+.team-fighter.down img{opacity:.3;filter:grayscale(1)}
+.team-fighter>b{position:absolute;left:25%;top:30%;font-size:22px}
+/* Cronometro y viento, juntos en el centro de arriba del mapa. */
+.team-hud{position:absolute;z-index:5;top:6px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;pointer-events:none}
+.team-clock{display:flex;align-items:baseline;gap:6px;padding:3px 12px;border:1px solid #ffffff3d;border-radius:999px;background:#07131fc4;backdrop-filter:blur(4px);line-height:1}
+.team-clock b{font-size:clamp(19px,3.4vw,27px);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.team-clock span{font-size:clamp(9px,1.6vw,11px);letter-spacing:.08em;color:#a9c2de}
+.team-clock.mine{border-color:#8ce8b9;background:#0d2a20d9;box-shadow:0 0 0 1px #8ce8b94d,0 4px 16px #0a2e2160}
+.team-clock.mine b,.team-clock.mine span{color:#a9ffd2}
+.team-clock.urgent{border-color:#ffb46a;background:#2e1a0ad9;animation:team-clock-beat .85s ease-in-out infinite}
+.team-clock.urgent b,.team-clock.urgent span{color:#ffd9a6}
+@keyframes team-clock-beat{50%{transform:scale(1.07)}}
+.team-wind{display:flex;align-items:center;gap:6px;padding:4px 11px;border:1px solid #ffffff38;border-radius:999px;background:#08152699;backdrop-filter:blur(3px);font-size:clamp(10px,1.9vw,12px);line-height:1;pointer-events:none}
+.team-wind b{font-size:9px;letter-spacing:.14em;color:#a8c4e2}
+.team-wind i{font-style:normal;font-size:clamp(13px,2.4vw,16px);color:#9fe7ff;text-shadow:0 0 8px #56c8ff88}
+.team-wind em{font-style:normal;font-weight:bold;color:#fff}
+.team-wind.left i{animation:team-wind-left 1.6s ease-in-out infinite}
+.team-wind.right i{animation:team-wind-right 1.6s ease-in-out infinite}
+@keyframes team-wind-left{50%{transform:translateX(-4px);opacity:.65}}
+@keyframes team-wind-right{50%{transform:translateX(4px);opacity:.65}}
+.team-combat-effects{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.team-tornado,.team-tornado u,.team-tornado i,.team-tornado b,.team-wind i,.team-aim-guide,.team-gusts i,.team-fighter.walking img,.team-fighter.walking>span,.team-turn-flag,.team-clock.urgent{animation:none}.team-gusts{display:none}}
+.team-turn-queue{min-height:42px;display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding:6px 12px;background:#0e1b2fec;border-top:1px solid #ffffff22;font-size:clamp(10px,2vw,12px)}
+.team-turn-queue>b{font-size:10px;color:#9bb1d0}
+.team-turn-queue span{color:var(--player-color);font-weight:bold}
+.team-turn-queue small{display:block;font-size:9px;color:#b4c6de}
+
+/* --- Controles --- */
+.team-controls{margin:10px auto;padding:clamp(8px,1.4vw,12px);display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px 16px;border:1px solid var(--line);border-radius:17px;background:var(--panel)}
+.team-charge{grid-column:1/-1}
+.team-charge label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.team-charge>button{width:100%;height:clamp(40px,7vw,46px);position:relative;overflow:hidden;background:#0a172a;touch-action:none;user-select:none}
+.team-charge i{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#46cb99,#ecd360);pointer-events:none}
+.team-charge span{position:relative;text-shadow:0 1px 3px #000;font-size:13px}
+.team-charge u{position:absolute;top:0;bottom:0;border-left:2px dashed #fff;pointer-events:none}
+/* Flex en vez de grid: el boton de disparo baja solo cuando la fila se queda sin ancho. */
+.team-aim{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.team-aim label{flex:1 1 130px;min-width:0;font-size:12px}
+.team-bonus{font-style:normal;margin-left:5px;padding:1px 5px;border-radius:5px;background:#3c5c21;color:#d8ff9e;font-size:10px}
+.team-aim label b{float:right}
+.team-aim input{width:100%;accent-color:#79eab1;min-height:30px}
+.team-direction{display:flex;gap:3px}
+.team-direction button{min-width:42px;padding:6px}
+.team-app .team-fire{flex:1 1 115px;background:linear-gradient(#ffd36a,#ffab55);color:#402610;min-height:50px}
+.team-fire small,.team-items small{display:block;font-size:10px;font-weight:normal}
+.team-items button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15}
+.team-icon{width:clamp(16px,2.4vw,20px);height:clamp(16px,2.4vw,20px);display:block}
+.team-movement{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px}
+.team-movement span{min-width:96px}
+.team-movement span b{display:block}
+.team-movement button{min-width:44px}
+.team-movement small{color:#a7bbd4;font-size:10px}
+.team-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;grid-column:1/-1}
+.team-items button{font-size:clamp(10px,2vw,12px);padding:7px 4px}
+.team-app .team-ss[aria-pressed=true]{border-color:#ffd76a;background:linear-gradient(#6d4a12,#8a5b16);box-shadow:0 0 0 2px #ffd76a3d}
+.team-friendly{grid-column:1/-1;margin:0;color:#dec998;font-size:clamp(10px,2vw,12px)}
+.team-result{margin:10px auto;padding:16px;max-width:900px;text-align:center;background:#1b3450;border-radius:16px}
+.team-result h2{margin:0;font-size:clamp(19px,4vw,26px)}
+.team-result p{font-size:14px}
+.team-social{display:flex;gap:8px;flex-wrap:wrap;margin:10px auto}
+.team-social button{font-size:clamp(11px,2.2vw,13px)}
+.team-chat{max-width:720px;margin:10px auto;border:1px solid #ffffff35;border-radius:14px;padding:10px;background:#12243d}
+.team-chat header{display:flex;align-items:center;justify-content:space-between}
+.team-chat [role=log]{height:clamp(80px,14vh,120px);overflow:auto;font-size:14px;overflow-wrap:anywhere}
+.team-chat p{margin:6px 0}
+.team-chat form{display:flex;gap:7px;margin-top:8px}
+.team-chat input{flex:1}
+.team-reactions{display:flex;gap:5px}
+.team-reactions button{padding:6px 10px}
+
+/* Telefono vertical: una columna, mapa mas bajo y marcador en dos filas. */
+/* Telefono vertical: el mapa y los controles tienen que caber sin hacer scroll. */
+@media(max-width:700px){
+ .team-header>span{order:3;margin-left:0;font-size:11px}
+ .team-board{width:clamp(96px,29%,130px);font-size:9px;padding:4px;line-height:1.2}
+ .team-board header{font-size:8px}
+ .team-board-turn{font-size:10px;margin:1px 0 3px}
+ .team-board li{padding:1px 3px;gap:4px}
+ .team-board meter{height:4px}
+ .team-board footer{margin-top:3px;padding-top:3px}
+ /* En el telefono el boton de pantalla completa se queda solo con su icono. */
+ .team-app .team-fullscreen{font-size:0;padding:5px 9px}
+ .team-app .team-fullscreen:before{content:"⛶";font-size:15px}
+ .team-app.is-fullscreen .team-fullscreen:before{content:"⤡"}
+ .team-roster article{display:block;padding:4px 5px;text-align:center;border-left-width:3px}
+ .team-roster img{display:none}
+ .team-roster b{font-size:9px;line-height:1.25}
+ .team-roster span{font-size:9px;color:#b7cbe4}
+ .team-roster meter{width:100%;height:7px}
+ .team-roster small{display:none}
+ .team-arena-heading{margin:6px auto 4px}
+ .team-stage{height:clamp(178px,46vw,240px)}
+ .team-turn-queue{min-height:34px;justify-content:center;gap:9px}
+ .team-controls{grid-template-columns:1fr;gap:8px}
+ .team-charge label,.team-aim label{font-size:11px}
+ /* Angulo, direccion y disparo en una sola fila: el mapa gana ese alto. */
+ .team-aim{gap:6px}
+ .team-aim label{flex:1 1 92px}
+ .team-direction button{min-width:36px;padding:6px 4px}
+ .team-app .team-fire{flex:1 1 96px}
+ .team-friendly{display:none}
+ .team-items{gap:5px;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .team-items .team-ss{grid-column:auto}
+ .team-items button{padding:6px 2px}
+ .team-movement{gap:6px}
+ .team-movement small{flex-basis:100%;font-size:9px}
+ .team-friendly{font-size:10px}
+}
+/*
+ * Pantallas chicas: el marcador deja de ser columna y pasa a ser una tira fina
+ * sobre el mapa, para que el campo se quede con casi todo el alto.
+ */
+@media(max-width:700px),(max-height:560px) and (orientation:landscape){
+ .team-app.is-playing .team-board{left:5px;right:5px;top:4px;width:auto;display:flex;align-items:center;gap:7px;padding:3px 7px}
+ .team-app.is-playing .team-board header{flex:0 0 auto;flex-direction:column;gap:0;line-height:1.1}
+ .team-app.is-playing .team-board header span{max-width:74px}
+ .team-app.is-playing .team-board-turn{order:3;margin:0;white-space:nowrap}
+ .team-app.is-playing .team-board ol{flex:1;order:2;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .team-app.is-playing .team-board li{flex-wrap:wrap}
+ .team-app.is-playing .team-board li>em{font-size:8px}
+ .team-app.is-playing .team-board footer{order:4;margin:0;padding:0;border:0;white-space:nowrap}
+ .team-app.is-playing .team-hud{top:44px;gap:6px}
+ .team-clock{padding:2px 9px}
+}
+/* Telefono acostado: la altura es el recurso escaso. */
+@media(max-height:560px) and (orientation:landscape){
+ .team-app{padding:4px}
+ .team-header{margin-bottom:5px}
+ .team-lobby{margin:5px auto;padding:10px}
+ .team-lobby h1{margin:3px 0}
+ .team-characters img{height:66px}
+ .team-stage{height:clamp(132px,38vh,220px)}
+ .team-arena-heading{margin:5px auto 4px}
+ .team-turn-queue{min-height:32px;padding:3px 9px}
+ .team-controls{margin:6px auto;padding:6px;gap:5px 10px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+ /* Acostado el alto manda: la barra de carga vuelve a compartir fila. */
+ .team-app.is-playing .team-charge,.team-app.is-playing .team-items{grid-column:auto}
+ .team-app.is-playing .team-controls{padding:6px;gap:5px 10px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+ .team-app button{min-height:34px}
+ .team-app .team-fire{min-height:38px}
+ .team-social button{min-height:30px;padding:4px 9px}
+ .team-board{width:clamp(92px,17%,142px);padding:4px;line-height:1.2}
+ .team-board li{padding:1px 3px}
+ .team-board footer{margin-top:3px;padding-top:3px}
+ /* La carga deja de ocupar una fila entera: en horizontal el alto es lo que falta. */
+ .team-charge{grid-column:auto}
+ .team-charge>button{height:38px}
+ .team-charge label{margin-bottom:3px}
+ .team-roster article{padding:3px 5px}
+ .team-items{gap:5px}
+ .team-items button{padding:5px 2px;min-height:38px}
+ .team-friendly{display:none}
+ .team-social{margin:6px auto}
+ .team-movement small{display:none}
+ .team-chat [role=log]{height:70px}
+}

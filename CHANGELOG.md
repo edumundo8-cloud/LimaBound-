@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Los bots apuntan algo peor: fallan a propósito cerca de cuatro de cada diez tiros en vez de tres, así que aciertan el 63% de las veces en lugar del 71% y pegan un 11% menos por disparo. La búsqueda de ángulo y el resto del comportamiento no cambian.
+- `app/TeamGame.tsx` declara sus cajas mutables antes del primer efecto que las lee. Solo cambia el orden, pero con eso desaparece el último error de lint del proyecto (`react-hooks/immutability`).
+- El monumento del centro ya no frena disparos en el aire vacío. Plaza San Martín y el Faro de Miraflores llevan ahora su silueta, sacada del alfa de sus ilustraciones, y la pantalla dibuja la imagen dentro de esa misma caja: el proyectil revienta solo donde se ve piedra. El paseo por el centro se mantiene igual que antes.
+- El suelo por donde caminan los personajes deja de ser gris plano. Lleva un dibujo limeño de tres colores —tierra de noche, arena y terracota— con el tejido de rombos de una manta al fondo y, pegada a la superficie, una greca escalonada que sigue el relieve. El 2v2 y el duelo 1v1 comparten los motivos.
+- Proyectiles con cuerpo iluminado orientado al vuelo, estela caliente que se disipa en humo y explosiones con fuego, polvo, chispas y fragmentos. 2v2 y duelo comparten el renderer, sin modificar trayectorias ni daño.
+- Cráteres de Bala 1 y Dual Shot un 10% más anchos y profundos; SS un 20%, tanto en práctica como en salas.
+- Tornado con vapor sombreado, embudo visual 15% más estrecho y polvo apoyado en el terreno. La fuerza y duración permanecen iguales; el 2v2 conserva el tornado del disparo hasta finalizar su animación.
+
+- El chat deja de flotar sobre los controles y pasa al flujo de la página en todas las pantallas; en celular horizontal, la selección de personaje y el HUD también se compactan para evitar cruces.
+- El jugador 2 puede entrar directamente desde el enlace compartido o usar un código de sala visible y fácil de copiar.
+- El chat ocupa menos espacio, conserva solo tres reacciones rápidas y limita el historial visible a los mensajes recientes.
+- Las salas 1v1 incluyen voz opcional entre navegadores, con permiso explícito de micrófono, estado de conexión, silencio y salida de voz.
 - Las reglas de impacto (radio de explosion, crater, radio del objetivo y dano del SS) viven una sola vez en `lib/battle.ts`; cliente y sala las importan, asi que ya no pueden quedar desincronizadas.
 - El hueco de Plaza San Miguel sigue la rasante real del terreno y muestra el canto del asfalto, la pared del fondo iluminada y sombra de contacto.
 - El aviso de la sala en la URL se agenda fuera del efecto de conexion: se acaba el error de lint por `setState` sincronico dentro del efecto.
