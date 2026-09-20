@@ -55,7 +55,8 @@ export function stepProjectile(x: number, y: number, dx: number, dy: number, win
 
 // Impact rules shared by the authoritative room, practice bot and animation.
 export const blastRadius = (player: number, special: boolean) => special ? 50 : player === 0 ? 40 : 34;
-export const craterRadius = (player: number, special: boolean) => special ? 17*1.2 : (player === 0 ? 14 : 12)*1.1;
+export const CRATER_GROWTH = 1.12;
+export const craterRadius = (player: number, special: boolean) => (special ? 17*1.2 : (player === 0 ? 14 : 12)*1.1)*CRATER_GROWTH;
 export const targetRadiusFor = (player: number) => player === 0 ? 24 : 18;
 export const shotDamage = (player: number, special: boolean) => special ? (player === 0 ? 53 : 44) : 25;
 

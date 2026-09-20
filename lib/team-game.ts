@@ -1,4 +1,4 @@
-import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, groundAt, impactDamage, stepProjectile, type Crater, type Tornado} from "./battle.ts";
+import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, CRATER_GROWTH, groundAt, impactDamage, stepProjectile, type Crater, type Tornado} from "./battle.ts";
 import {CHARACTER_ROSTER, isCharacterId, type CharacterId} from "./characters.ts";
 import {randomSceneIndex} from "./scenes.ts";
 
@@ -31,7 +31,7 @@ export const COLORS = [TEAM_COLORS[0], TEAM_COLORS[1], TEAM_COLORS[0], TEAM_COLO
 export const teamColor = (team:0|1) => TEAM_COLORS[team];
 /** El SS abre un crater mucho mas ancho y alcanza a todo el que este dentro. */
 export const BLAST = {basic:64, special:96};
-export const CRATER = {basic:15*1.1, special:32*1.2};
+export const CRATER = {basic:15*1.1*CRATER_GROWTH, special:32*1.2*CRATER_GROWTH};
 export const DAMAGE = {basic:25, special:52};
 /**
  * El monumento del centro (Plaza San Martin, Faro de Miraflores) es solido,

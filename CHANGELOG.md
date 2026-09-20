@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Cada personaje dispara un objeto propio: hueso (Perro Peruano), wantán (Cocinero Chifa), churro (Churrera Limeña), llanta (Mototaxista), boleto (Cobrador de Combi) y pescado (Maestro Cevichero). Bala 1, Dual y SS comparten el diseño del personaje en 2v2 y duelo; SS es más grande. Las siluetas conservan su proporción y legibilidad en celular.
+- Todos los cráteres crecen otro 12% en ancho y profundidad sobre el tamaño anterior, tanto en práctica como en salas. El alcance de daño y las trayectorias se mantienen.
+
 - Espacio ahora carga y dispara aunque el foco esté en los controles de SS o Dual Shot; el daño de cada proyectil cae gradualmente según la distancia al impacto y los personajes siguen la inclinación del terreno y de los cráteres.
 
 - Los bots apuntan algo peor: fallan a propósito cerca de cuatro de cada diez tiros en vez de tres, así que aciertan el 63% de las veces en lugar del 71% y pegan un 11% menos por disparo. La búsqueda de ángulo y el resto del comportamiento no cambian.

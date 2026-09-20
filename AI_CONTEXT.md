@@ -28,6 +28,8 @@ ambientado en Lima durante la noche. La experiencia debe sentirse accesible,
 - La potencia empieza en cero, se define manteniendo presionada una barra de carga horizontal y vuelve a cero después de cada disparo. No se puede disparar sin cargarla.
 - Cada partida es una serie al mejor de tres rondas; el primer jugador en ganar dos recibe el resultado final Victoria o Derrota.
 - Los proyectiles de cada personaje usan colores distintos y los impactos emplean detección 2D.
+- Los proyectiles tienen silueta propia por personaje (hueso, wantán, churro, llanta, boleto o pescado); SS agranda esa misma silueta. La estela conserva el color del jugador o equipo.
+- Desde el 2026-09-20 todos los cráteres tienen un 12% adicional de radio y profundidad; `CRATER_GROWTH` comparte el factor entre 2v2 y duelo.
 - El viento, el movimiento y los disparos cuentan con efectos de sonido modernos, amistosos y ligeros.
 - Los personajes parpadean cada cinco segundos.
 - La vida de los personajes se incrementó 60% respecto de la versión inicial.

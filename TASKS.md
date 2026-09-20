@@ -1,8 +1,15 @@
 # Tareas de LimaBound
 
+## Proyectiles por personaje y cráteres +12% — 2026-09-20
+
+- Renderer compartido en `lib/projectile-art.ts`: hueso, wantán, churro, llanta, boleto y pescado. Los dos clientes toman el personaje del autor del disparo, también para Dual y SS; SS conserva su escala mayor. Los objetos compensan el estiramiento del escenario en teléfono.
+- `CRATER_GROWTH = 1.12` aumenta todos los radios actuales en 2v2 y duelo; el perfil de cráter aplica el mismo incremento a su profundidad. Las pruebas de terreno comprueban el incremento sobre el tamaño de la versión anterior y el alcance del hueco.
+- QA visual local: seis diseños renderizados con el código real, Bala 1/Dual, SS y escala de teléfono. Sin recursos externos nuevos. Compilación y pruebas: 104 aprobadas y los dos fallos heredados (`cloudflare:` y `--tw-enter-opacity`); lint sin errores.
+- Publicación autorizada por Carlos; GitHub y Sites recibirán el mismo commit probado.
+
 ## Espacio tras seleccionar items, daño gradual y postura — 2026-09-19
 
-- Rama local `codex/impact-damage-terrain-controls`, desde `e6d1212`. GitHub no se pudo consultar por fallo de conexión; no se publicó ni se hizo push.
+- Rama `codex/impact-damage-terrain-controls`, desde `e6d1212`. Publicada después como `5a7b7f9` en GitHub y versión 20 de Sites, por solicitud de Carlos.
 - Espacio funciona con foco en los controles de combate (incluidos SS y Dual), conserva la edición de texto y evita activaciones repetidas al mantener la tecla. En 2v2, una carga lista también se dispara con Espacio.
 - Práctica y salas comparten daño gradual: 100% a distancia del centro corporal <=27 unidades, descenso lineal hasta cero en el borde de la explosión, redondeado a HP enteros. Cada proyectil Dual se calcula por separado; se conserva el bonus de ángulo y fuego amigo.
 - La postura toma la pendiente a ambos lados de los pies, hasta 30 grados; la altura sigue el suelo deformado. El 2v2 aplica la postura al aparecer cada cráter durante la animación.

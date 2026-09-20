@@ -156,7 +156,7 @@ export default function TeamGame(){
       <div className={`team-wind ${game.wind<0?"left":"right"}`} aria-label={`Viento ${Math.abs(game.wind)} hacia ${game.wind<0?"la izquierda":"la derecha"}`}><b>VIENTO</b><i>{game.wind<0?"←":"→"}</i><em>{Math.abs(game.wind)}</em></div>
      </div>
      {tornado&&<TornadoVisual tornado={tornado} ground={teamGround(tornado.x,displayCraters,game.scene)} width={TEAM_WIDTH}/>}
-     <CombatEffects event={game.event} elapsed={elapsed}/>
+     <CombatEffects event={game.event} elapsed={elapsed} character={game.players[game.event.player??0].character}/>
      {wall&&<div className="team-wall" style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}} aria-label="Monumento: los disparos no lo atraviesan"/>}
      {/* El dibujo llena justo la caja de la silueta: se ve exactamente lo que frena los disparos. */}
      {wall&&(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}

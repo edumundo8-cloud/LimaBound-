@@ -1,3 +1,6 @@
+import type {CharacterId} from "./characters.ts";
+import {drawCharacterProjectile} from "./projectile-art.ts";
+
 /** Deterministic, bounded canvas effects shared by the duel and team battle.
  * Positions come from the simulation; these particles never affect collisions. */
 export type EffectPoint = {x:number;y:number};
@@ -9,7 +12,7 @@ function glow(ctx:CanvasRenderingContext2D,x:number,y:number,r:number,center:str
  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,Math.max(.1,r),0,TAU);ctx.fill();
 }
 
-export function drawProjectile(ctx:CanvasRenderingContext2D,path:EffectPoint[],color:string,special=false,time=0){
+export function drawProjectile(ctx:CanvasRenderingContext2D,path:EffectPoint[],color:string,special=false,time=0,character:CharacterId="perro-peruano"){
  const head=path.at(-1);if(!head)return;
  const size=special?1.4:1,tail=path.slice(-28),previous=path.at(-2)??{x:head.x-1,y:head.y};
  ctx.save();
@@ -26,13 +29,16 @@ export function drawProjectile(ctx:CanvasRenderingContext2D,path:EffectPoint[],c
   ctx.lineWidth=(.6+Math.max(0,strength)*3.5)*size;ctx.lineCap="round";
   ctx.beginPath();ctx.moveTo(tail[i-1].x,tail[i-1].y);ctx.lineTo(tail[i].x,tail[i].y);ctx.stroke();
  }
- ctx.globalAlpha=.75;glow(ctx,head.x,head.y,15*size,"#fff0bd",color);
+ ctx.globalAlpha=.45;glow(ctx,head.x,head.y,15*size,"#fff0bd",color);
  ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;
- ctx.translate(head.x,head.y);ctx.rotate(Math.atan2(head.y-previous.y,head.x-previous.x));
- const metal=ctx.createLinearGradient(0,-3*size,0,3*size);
- metal.addColorStop(0,"#273140");metal.addColorStop(.28,"#fff8dc");metal.addColorStop(.55,color);metal.addColorStop(1,"#17202c");
- ctx.fillStyle=metal;ctx.beginPath();ctx.ellipse(0,0,6.5*size,3*size,0,0,TAU);ctx.fill();
- ctx.fillStyle="#fffbed";ctx.beginPath();ctx.ellipse(3*size,-.7*size,2.5*size,.9*size,0,0,TAU);ctx.fill();
+ // The terrain stretches on phones. Keep the object itself at a readable
+ // screen size and orient it along the visible trajectory, not that stretch.
+ const sx=(ctx.canvas.clientWidth||ctx.canvas.width)/ctx.canvas.width;
+ const sy=(ctx.canvas.clientHeight||ctx.canvas.height)/ctx.canvas.height;
+ ctx.translate(head.x,head.y);ctx.scale(1/sx,1/sy);
+ ctx.rotate(Math.atan2((head.y-previous.y)*sy,(head.x-previous.x)*sx));
+ ctx.scale(size,size);
+ drawCharacterProjectile(ctx,character);
  ctx.restore();
 }
 
