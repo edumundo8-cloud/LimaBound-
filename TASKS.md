@@ -1,5 +1,15 @@
 # Tareas de LimaBound
 
+## Espacio tras seleccionar items, daño gradual y postura — 2026-09-19
+
+- Rama local `codex/impact-damage-terrain-controls`, desde `e6d1212`. GitHub no se pudo consultar por fallo de conexión; no se publicó ni se hizo push.
+- Espacio funciona con foco en los controles de combate (incluidos SS y Dual), conserva la edición de texto y evita activaciones repetidas al mantener la tecla. En 2v2, una carga lista también se dispara con Espacio.
+- Práctica y salas comparten daño gradual: 100% a distancia del centro corporal <=27 unidades, descenso lineal hasta cero en el borde de la explosión, redondeado a HP enteros. Cada proyectil Dual se calcula por separado; se conserva el bonus de ángulo y fuego amigo.
+- La postura toma la pendiente a ambos lados de los pies, hasta 30 grados; la altura sigue el suelo deformado. El 2v2 aplica la postura al aparecer cada cráter durante la animación.
+- `npm test`: 104 pasan, solo fallan los 2 heredados (`cloudflare:` y `--tw-enter-opacity`), reproducidos antes de editar (100 pasaban). Compilación de producción correcta. `npm run lint`: 0 errores y 17 advertencias.
+- Navegador, vista de producción local: cargar, seleccionar SS y pulsar Espacio; repetir con Dual. Ambos disparan y consumen el item. Inspección de postura y controles en escritorio y 390×844. Las salas están cubiertas por las pruebas de lógica existentes; falta partida manual entre dos dispositivos.
+- El servidor de desarrollo falló al cargar un módulo virtual en el navegador integrado. La verificación visual se completó con `vite preview`, que usa el runtime Cloudflare del proyecto.
+
 ## Silueta del monumento, piso limeño y bots menos certeros — 2026-09-18
 
 - Producción: compilación correcta. `npm test`: 100 pasan; siguen fallando solo las 2 pruebas heredadas (`cloudflare:` y `--tw-enter-opacity`), reproducidas antes de editar (96 pasaban).

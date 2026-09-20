@@ -144,7 +144,7 @@
  * quedara mas chico que la caja, volveria la barrera invisible.
  */
 .team-landmark{position:absolute;z-index:3;object-fit:fill;pointer-events:none}
-.team-fighter{position:absolute;z-index:4;width:clamp(42px,6.4vw,84px);height:clamp(46px,6.6vw,86px);transform:translateX(-50%);pointer-events:none;transition:left .2s ease,bottom .15s ease}
+.team-fighter{position:absolute;z-index:4;width:clamp(42px,6.4vw,84px);height:clamp(46px,6.6vw,86px);transform:translateX(-50%);pointer-events:none;transform-origin:50% 100%;transition:left .2s ease,bottom .25s ease,transform .25s ease}
 .team-fighter img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 2px #0009);transition:transform .12s ease}
 /* Dos zancadas cortas mientras el personaje se desliza a su nueva posicion. */
 .team-fighter.walking img{animation:team-step .21s ease-in-out 2}

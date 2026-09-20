@@ -1,4 +1,4 @@
-import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, groundAt, stepProjectile, type Crater, type Tornado} from "./battle.ts";
+import {FIELD_WIDTH as DUEL_WIDTH, MOVE_BUDGET as DUEL_MOVE, groundAt, impactDamage, stepProjectile, type Crater, type Tornado} from "./battle.ts";
 import {CHARACTER_ROSTER, isCharacterId, type CharacterId} from "./characters.ts";
 import {randomSceneIndex} from "./scenes.ts";
 
@@ -170,7 +170,7 @@ export function moveTeamPlayer(s:TeamState,id:number,delta:number):number{
 export const angleBonus=(angle:number)=>angle>HIGH_ANGLE?HIGH_ANGLE_BONUS:1;
 export function blastDamage(s:TeamState,impact:Point,special:boolean,bonus=1):number[]{
  const radius=special?BLAST.special:BLAST.basic,hit=Math.round((special?DAMAGE.special:DAMAGE.basic)*bonus);
- return s.players.map(target=>target.hp>0&&Math.hypot(impact.x-target.x,impact.y-(teamGround(target.x,s.craters,s.scene)-25))<=radius?hit:0);
+ return s.players.map(target=>target.hp>0?impactDamage(hit,Math.hypot(impact.x-target.x,impact.y-(teamGround(target.x,s.craters,s.scene)-25)),radius):0);
 }
 
 /** Identical trajectory and collision output is used by server, bots and renderer. */

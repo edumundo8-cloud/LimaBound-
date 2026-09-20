@@ -58,3 +58,16 @@ export const blastRadius = (player: number, special: boolean) => special ? 50 : 
 export const craterRadius = (player: number, special: boolean) => special ? 17*1.2 : (player === 0 ? 14 : 12)*1.1;
 export const targetRadiusFor = (player: number) => player === 0 ? 24 : 18;
 export const shotDamage = (player: number, special: boolean) => special ? (player === 0 ? 53 : 44) : 25;
+
+// A hit on the body (including the feet) keeps full damage. Splash falls
+// linearly to zero at the blast edge; halfway through that band means 50%.
+export function impactDamage(maxDamage: number, distance: number, radius: number, directRadius = 27): number {
+  const fraction = Math.max(0, Math.min(1, (radius-distance)/(radius-directRadius)));
+  return Math.round(maxDamage*fraction);
+}
+
+// Sample close to the feet so even a small crater changes the stance.
+export function terrainTilt(x: number, ground: (x: number) => number): number {
+  const slope = Math.atan2(ground(x+8)-ground(x-8),16)*180/Math.PI;
+  return Math.max(-30,Math.min(30,slope));
+}

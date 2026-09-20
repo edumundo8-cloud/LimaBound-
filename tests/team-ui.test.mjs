@@ -192,7 +192,7 @@ test("el marcador y el orden de turnos viven en una sola columna del campo", () 
 });
 
 test("espacio y flechas no mueven la pagina, y el angulo se ajusta esperando turno", () => {
-  assert.match(ui, /if\(event\.code==="Space"\)\{event\.preventDefault\(\);startCharge\(\);return\}/);
+  assert.match(ui, /if\(event\.code==="Space"\)\{event\.preventDefault\(\);if\(!myTurn\)return;/);
   assert.match(ui, /if\(event\.key==="ArrowUp"\|\|event\.key==="ArrowDown"\)\{event\.preventDefault\(\);setAngle/, "el angulo se mueve siempre");
   assert.match(ui, /if\(event\.key==="ArrowLeft"\|\|event\.key==="ArrowRight"\)\{event\.preventDefault\(\);if\(myTurn\)walk/, "caminar sigue siendo solo en tu turno");
   assert.match(ui, /className=\{`team-aim-guide \$\{myTurn\?"":"waiting"\}`\}/);

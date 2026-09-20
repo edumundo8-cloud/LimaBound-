@@ -17,8 +17,8 @@ test("las reglas de impacto viven una sola vez, en lib/battle.ts", () => {
     assert.match(fuente, /blastRadius,|craterRadius,/, `${archivo} debe importar los radios compartidos`);
   }
   assert.match(pageSource, /targetRadiusFor\(target\)/);
-  assert.match(pageSource, /damagePerHit=shotDamage\(player,special\)/);
-  assert.match(roomSource, /damagePerHit=shotDamage\(player,special\)/);
+  assert.match(pageSource, /impactDamage\(shotDamage\(player,special\)/);
+  assert.match(roomSource, /impactDamage\(shotDamage\(player,special\)/);
 });
 
 test("el daño se conserva y los cráteres crecen 10% y 20% para SS", () => {

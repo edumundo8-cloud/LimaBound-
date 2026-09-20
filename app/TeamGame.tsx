@@ -3,6 +3,7 @@
 import {useCallback,useEffect,useRef,useState,type CSSProperties} from "react";
 import Link from "next/link";
 import {CHARACTER_ROSTER,characterById,type CharacterId} from "@/lib/characters";
+import {terrainTilt} from "@/lib/battle";
 import {SCENES} from "@/lib/scenes";
 import {COLORS,TEAM_COLORS,CRATER,HIGH_ANGLE,teamTornado,wallFor,TEAM_WIDTH,TEAM_MOVE,TEAM_STEP,TURN_TIME,applyTeamAction,newTeamGame,nextPlayers,teamGround,tickTeamGame,type GameAction,type TeamState} from "@/lib/team-game";
 import "./team-game.css";
@@ -84,9 +85,11 @@ export default function TeamGame(){
  const startCharge=useCallback(()=>{if(!myTurn||chargeStart.current)return;chargeStart.current=performance.now();powerRef.current=0;setPower(0);setCharging(true);const update=()=>{powerRef.current=Math.min(100,Math.max(1,Math.round((performance.now()-chargeStart.current)/30)));setPower(powerRef.current);if(powerRef.current<100)chargeFrame.current=requestAnimationFrame(update)};chargeFrame.current=requestAnimationFrame(update)},[myTurn]);
  const fire=useCallback(()=>{if(!myTurn||powerRef.current<=0)return;void act({type:"fire",power:powerRef.current,angle,direction,special:shotType==="special",dual:shotType==="dual"})},[myTurn,act,angle,direction,shotType]);
  useEffect(()=>{const down=(event:KeyboardEvent)=>{
-  if((event.target as HTMLElement)?.closest("input,textarea,button,a,select")||event.repeat)return;
+  const target=event.target as HTMLElement|null;
+  if(event.altKey||event.ctrlKey||event.metaKey||target?.closest("input,textarea,select,[contenteditable]:not([contenteditable='false'])")||(target?.closest("button,a")&&!target.closest(".team-controls")))return;
+  if(event.repeat){if(event.code==="Space")event.preventDefault();return;}
   // Espacio y flechas nunca deben desplazar la pagina: el juego entra entero en pantalla.
-  if(event.code==="Space"){event.preventDefault();startCharge();return}
+  if(event.code==="Space"){event.preventDefault();if(!myTurn)return;if(powerRef.current>0&&!chargeStart.current)fire();else startCharge();return}
   if(event.key==="ArrowUp"||event.key==="ArrowDown"){event.preventDefault();setAngle(value=>Math.max(18,Math.min(78,value+(event.key==="ArrowUp"?2:-2))));return}
   if(event.key==="ArrowLeft"||event.key==="ArrowRight"){event.preventDefault();if(myTurn)walk(event.key==="ArrowLeft"?-TEAM_STEP:TEAM_STEP)}
  };const up=(event:KeyboardEvent)=>{if(event.code==="Space"&&chargeStart.current){event.preventDefault();stopCharge();fire()}};const blur=()=>stopCharge();window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",blur);return()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",blur)}},[myTurn,walk,startCharge,stopCharge,fire]);
@@ -157,7 +160,7 @@ export default function TeamGame(){
      {wall&&<div className="team-wall" style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}} aria-label="Monumento: los disparos no lo atraviesan"/>}
      {/* El dibujo llena justo la caja de la silueta: se ve exactamente lo que frena los disparos. */}
      {wall&&(scene.kind==="plaza"||scene.kind==="faro")&&<img className={`team-landmark ${scene.kind}`} src={scene.kind==="plaza"?"/game/plaza-san-martin.png":"/game/faro-miraflores.png"} alt={scene.landmark} style={{left:`${wall.x0/TEAM_WIDTH*100}%`,width:`${(wall.x1-wall.x0)/TEAM_WIDTH*100}%`,height:`${wall.height/3.9}%`,bottom:`${(390-teamGround(TEAM_WIDTH/2,displayCraters,game.scene))/3.9}%`}}/>}
-     {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""} ${walking(p.id)?"walking":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`}}>{game.turn===p.id&&shownHP(p.id)>0&&<u className="team-turn-flag" aria-hidden="true"/>}<span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
+     {game.players.map(p=><div key={p.id} className={`team-fighter ${game.turn===p.id?"active":""} ${shownHP(p.id)===0?"down":""} ${walking(p.id)?"walking":""}`} style={{...colorStyle(p.id),left:`${p.x/TEAM_WIDTH*100}%`,bottom:`${(390-teamGround(p.x,displayCraters,game.scene))/3.9}%`,transform:`translateX(-50%) rotate(${terrainTilt(p.x,x=>teamGround(x,displayCraters,game.scene))}deg)`}}>{game.turn===p.id&&shownHP(p.id)>0&&<u className="team-turn-flag" aria-hidden="true"/>}<span>J{p.id+1}<i>{p.team===0?"A":"B"}</i></span><img src={characterById(p.character).image} alt={`Jugador ${p.id+1}: ${characterById(p.character).name}`} style={{transform:`scaleX(${(p.id===role&&myTurn?direction:p.facing)*characterById(p.character).drawnFacing})`}}/>{shownHP(p.id)===0&&<b>KO</b>}</div>)}
      {/* Marcador y orden de turnos en una sola columna: libera todo el alto para el mapa. */}
      <aside className="team-board" aria-label="Jugadores, vida y orden de turnos">
       <header><b>RONDA {game.round}</b><span>{scene.label}</span></header>

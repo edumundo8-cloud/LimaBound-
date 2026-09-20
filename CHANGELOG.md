@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Espacio ahora carga y dispara aunque el foco esté en los controles de SS o Dual Shot; el daño de cada proyectil cae gradualmente según la distancia al impacto y los personajes siguen la inclinación del terreno y de los cráteres.
+
 - Los bots apuntan algo peor: fallan a propósito cerca de cuatro de cada diez tiros en vez de tres, así que aciertan el 63% de las veces en lugar del 71% y pegan un 11% menos por disparo. La búsqueda de ángulo y el resto del comportamiento no cambian.
 - `app/TeamGame.tsx` declara sus cajas mutables antes del primer efecto que las lee. Solo cambia el orden, pero con eso desaparece el último error de lint del proyecto (`react-hooks/immutability`).
 - El monumento del centro ya no frena disparos en el aire vacío. Plaza San Martín y el Faro de Miraflores llevan ahora su silueta, sacada del alfa de sus ilustraciones, y la pantalla dibuja la imagen dentro de esa misma caja: el proyectil revienta solo donde se ve piedra. El paseo por el centro se mantiene igual que antes.
